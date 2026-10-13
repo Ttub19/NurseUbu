@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>แอดมิน | Sex Education</title>
+  <link rel="icon" href="assets/logo-nursing-ubu.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600;700&family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin">
+
+  <!-- เข้าสู่ระบบ -->
+  <section id="loginView" class="login-wrap">
+    <form class="card login" id="loginForm" novalidate>
+      <div class="login-brand"><img src="assets/logo-nursing-ubu.svg" alt="" width="44" height="44"><div><strong>Sex Education</strong><span>สำหรับผู้วิจัย</span></div></div>
+      <h1>เข้าสู่หน้าแอดมิน</h1>
+      <label class="lbl" for="pw">รหัสผ่าน</label>
+      <div class="pw-row">
+        <input type="password" id="pw" autocomplete="current-password" required>
+        <button type="button" class="pw-toggle" id="pwToggle" aria-label="แสดงรหัสผ่าน" aria-pressed="false">แสดง</button>
+      </div>
+      <p class="field-error" id="loginErr" role="alert" hidden></p>
+      <button class="btn btn-primary btn-block" type="submit" id="loginBtn">เข้าสู่ระบบ</button>
+      <div class="demo-box" id="demoBox" hidden>
+        <p>ยังไม่ได้ใส่ <code>SCRIPT_URL</code> ในไฟล์ <code>config.js</code> จึงยังดึงข้อมูลจริงไม่ได้</p>
+        <button class="btn btn-ghost btn-block" type="button" id="demoBtn">ดูตัวอย่างด้วยข้อมูลสมมติ</button>
+      </div>
+      <p class="fine"><a href="index.html">← กลับหน้าเว็บไซต์</a></p>
+    </form>
+  </section>
+
+  <!-- แดชบอร์ด -->
+  <div id="appView" hidden>
+    <header class="a-top">
+      <div class="a-top-in">
+        <div class="a-brand"><img src="assets/logo-nursing-ubu.svg" alt="" width="30" height="30"><span>Sex Education <em>แอดมิน</em></span></div>
+        <div class="a-actions">
+          <span class="fetched" id="fetchedAt" aria-live="polite"></span>
+          <button class="btn btn-ghost btn-sm" type="button" id="refreshBtn"><span aria-hidden="true">↻</span> รีเฟรช</button>
+          <button class="btn btn-primary btn-sm" type="button" id="exportBtn"><span aria-hidden="true">⤓</span> ส่งออก CSV</button>
+          <button class="btn btn-ghost btn-sm" type="button" id="logoutBtn">ออกจากระบบ</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="a-main">
+      <div class="demo-banner" id="demoBanner" hidden>โหมดตัวอย่าง · ข้อมูลทั้งหมดในหน้านี้เป็นข้อมูลสมมติ ไม่ใช่ข้อมูลวิจัยจริง</div>
+
+      <!-- ตัวกรอง -->
+      <section class="panel filters" aria-label="ค้นหาและตัวกรอง">
+        <div class="f-search">
+          <label class="lbl" for="q">ค้นหา</label>
+          <input type="search" id="q" placeholder="รหัสผู้ตอบ คณะ เพศ ระดับ…">
+        </div>
+        <div class="f-grid">
+          <div><label class="lbl" for="fFaculty">คณะ</label><select id="fFaculty"></select></div>
+          <div><label class="lbl" for="fGender">เพศ</label><select id="fGender"></select></div>
+          <div><label class="lbl" for="fYear">ชั้นปี</label><select id="fYear"></select></div>
+          <div><label class="lbl" for="fSex">เคยมีเพศสัมพันธ์</label><select id="fSex"></select></div>
+          <div><label class="lbl" for="fStatus">สถานะ</label><select id="fStatus"></select></div>
+          <div><label class="lbl" for="fFrom">ตั้งแต่วันที่</label><input type="date" id="fFrom"></div>
+          <div><label class="lbl" for="fTo">ถึงวันที่</label><input type="date" id="fTo"></div>
+        </div>
+        <div class="f-foot">
+          <label class="switch"><input type="checkbox" id="fUbu" checked><span class="sw" aria-hidden="true"></span>เฉพาะนักศึกษา ม.อุบลฯ <small>(คัดป้าย NON-UBU ออก)</small></label>
+          <span class="count" id="resultCount"></span>
+          <button class="link" type="button" id="clearBtn">ล้างตัวกรอง</button>
+        </div>
+      </section>
+
+      <!-- การ์ดสรุป -->
+      <section class="kpis" id="kpis" aria-label="สรุปภาพรวม"></section>
+
+      <div class="two-col">
+        <!-- สถิติ -->
+        <section class="panel" aria-labelledby="statsH">
+          <h2 id="statsH">สถิติเปรียบเทียบก่อน–หลัง</h2>
+          <p class="muted small">Paired t-test คำนวณจากข้อมูลที่กรองอยู่ เฉพาะผู้ที่ทำครบและมีคะแนนทั้งก่อนและหลัง</p>
+          <div id="stats"></div>
+        </section>
+        <!-- กราฟระดับ -->
+        <section class="panel" aria-labelledby="lvH">
+          <h2 id="lvH">จำนวนผู้ตอบแต่ละระดับความเสี่ยง</h2>
+          <div class="legend"><span><i class="sw-before"></i>ก่อน (พฤติกรรม 3 เดือนที่ผ่านมา)</span><span><i class="sw-after"></i>หลัง (พฤติกรรม 1 สัปดาห์ที่ผ่านมา)</span></div>
+          <div id="levelChart"></div>
+        </section>
+      </div>
+
+      <section class="panel" aria-labelledby="facH">
+        <h2 id="facH">คะแนนความเสี่ยงเฉลี่ยแยกตามคณะ</h2>
+        <div class="legend"><span><i class="sw-before"></i>ก่อน</span><span><i class="sw-after"></i>หลัง</span></div>
+        <div id="facultyChart"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="satH">
+        <h2 id="satH">ความพึงพอใจต่อเว็บไซต์</h2>
+        <p class="muted small">คะแนน 1–5 ดาว ไม่บังคับตอบ คำนวณจากผู้ที่ให้คะแนนในแต่ละด้าน</p>
+        <div id="satPanel"></div>
+      </section>
+
+      <!-- ตาราง -->
+      <section class="panel" aria-labelledby="tblH">
+        <div class="tbl-head">
+          <h2 id="tblH">รายการคำตอบ</h2>
+          <label class="per-page">แสดง
+            <select id="perPage"><option>25</option><option>50</option><option>100</option></select> แถว</label>
+        </div>
+        <p class="muted small">กดที่แถวเพื่อดูคำตอบรายข้อ · กดหัวคอลัมน์เพื่อเรียงลำดับ</p>
+        <div class="tbl-wrap">
+          <table class="tbl" id="tbl">
+            <thead><tr id="tblHeadRow"></tr></thead>
+            <tbody id="tblBody"></tbody>
+          </table>
+        </div>
+        <div class="empty" id="emptyState" hidden></div>
+        <nav class="pager" id="pager" aria-label="เปลี่ยนหน้า"></nav>
+      </section>
+    </main>
+  </div>
+
+  <!-- รายละเอียดรายคน -->
+  <dialog class="a-dialog" id="detailDlg" aria-labelledby="detailTitle">
+    <div class="dlg-head"><h2 id="detailTitle">รายละเอียด</h2><button type="button" class="dlg-close" data-close aria-label="ปิด">✕</button></div>
+    <div class="dlg-body" id="detailBody"></div>
+  </dialog>
+
+  <!-- ส่งออก -->
+  <dialog class="a-dialog narrow" id="exportDlg" aria-labelledby="exportTitle">
+    <form method="dialog" id="exportForm">
+      <div class="dlg-head"><h2 id="exportTitle">ส่งออก CSV</h2><button type="button" class="dlg-close" data-close aria-label="ปิด">✕</button></div>
+      <div class="dlg-body">
+        <fieldset class="field"><legend>หัวคอลัมน์</legend>
+          <div class="choices">
+            <label class="chip"><input type="radio" name="lang" value="th" checked><span>ภาษาไทย (อ่านง่าย)</span></label>
+            <label class="chip"><input type="radio" name="lang" value="en"><span>ภาษาอังกฤษ (สำหรับ SPSS)</span></label>
+          </div>
+        </fieldset>
+        <fieldset class="field"><legend>ข้อมูลที่จะส่งออก</legend>
+          <div class="choices col">
+            <label class="chip"><input type="radio" name="scope" value="filtered" checked><span id="scopeFiltered">เฉพาะที่กรองอยู่</span></label>
+            <label class="chip"><input type="radio" name="scope" value="all"><span id="scopeAll">ทั้งหมด</span></label>
+          </div>
+        </fieldset>
+        <p class="muted small">ไฟล์เปิดใน Excel ได้ภาษาไทยไม่เพี้ยน มีทั้งคำตอบดิบ คะแนนหลังกลับข้อเสี่ยง ผลต่าง และร้อยละการเปลี่ยนแปลง</p>
+      </div>
+      <div class="dlg-foot">
+        <button class="btn btn-ghost" type="button" data-close>ยกเลิก</button>
+        <button class="btn btn-primary" type="button" id="doExport">ดาวน์โหลด CSV</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="data.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

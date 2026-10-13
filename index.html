@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sex Education | รู้ทันซิฟิลิส ม.อุบลราชธานี</title>
+  <meta name="description" content="Sex Education เว็บไซต์ส่งเสริมความรอบรู้ด้านสุขภาพเรื่องโรคซิฟิลิส สาเหตุ การติดต่อ อาการ การรักษา การป้องกัน สำหรับนักศึกษามหาวิทยาลัยอุบลราชธานี">
+  <meta name="theme-color" content="#7E8C69">
+  <meta property="og:title" content="Sex Education | รู้ทันซิฟิลิส ม.อุบลราชธานี">
+  <meta property="og:description" content="เรียนรู้เรื่องโรคซิฟิลิสและประเมินพฤติกรรมป้องกันของตัวเอง">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="assets/logo-nursing-ubu.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600;700&family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#main">ข้ามไปเนื้อหาหลัก</a>
+  <div class="deco" aria-hidden="true"><span class="d1"></span><span class="d2"></span><span class="d3"></span><span class="d4"></span><span class="d5"></span><span class="d6"></span></div>
+
+  <header class="topbar">
+    <div class="topbar-in">
+      <button class="brand" type="button" data-nav="home" aria-label="Sex Education หน้าแรก">
+        <img class="brand-logo" src="assets/logo-nursing-ubu.svg" alt="" width="34" height="34">
+        <span>Sex Education</span>
+      </button>
+      <nav class="nav" aria-label="เมนูหลัก">
+        <button type="button" data-nav="home">หน้าแรก</button>
+        <button type="button" data-nav="assess">แบบประเมิน</button>
+        <button type="button" data-nav="content">เนื้อหา</button>
+        <button type="button" data-nav="sources">แหล่งข้อมูล</button>
+      </nav>
+    </div>
+    <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+  </header>
+
+  <main id="main" tabindex="-1">
+
+    <!-- หน้าแรก -->
+    <section class="view" id="view-home" data-view="home">
+      <!-- หน้าแรกแบบรูปเต็มจอ: เปลี่ยนรูปได้ที่ HERO_IMAGE ใน config.js -->
+      <div class="hero-full">
+        <div class="hero-full-in">
+          <div class="org org-light">
+            <img src="assets/logo-nursing-ubu.svg" alt="ตราคณะพยาบาลศาสตร์ มหาวิทยาลัยอุบลราชธานี" width="60" height="60">
+            <span>คณะพยาบาลศาสตร์<br>มหาวิทยาลัยอุบลราชธานี</span>
+          </div>
+          <p class="hero-eyebrow">รู้ทันโรคซิฟิลิส</p>
+          <h1>Sex Education</h1>
+          <p class="hero-tag">เรียนรู้ ป้องกัน และดูแลสุขภาพของคุณ</p>
+          <p class="hero-lead">ซิฟิลิสอาจไม่แสดงอาการ แต่ตรวจและรักษาได้ ลองประเมินพฤติกรรมก่อน อ่านเนื้อหา แล้วกลับมาประเมินอีกครั้งใน 1 สัปดาห์</p>
+          <div class="hero-actions">
+            <button class="btn btn-light btn-lg" type="button" id="btnStart">เริ่มต้น</button>
+            <button class="btn btn-outline-light btn-lg" type="button" id="btnReturn">กลับมาทำแบบประเมินหลังเรียน</button>
+          </div>
+          <p class="fine not-me" id="notMe" hidden>เครื่องนี้มีการทำค้างไว้ ถ้าไม่ใช่ของคุณ <button type="button" class="link" id="btnNotMe">เริ่มใหม่ในเครื่องนี้</button></p>
+        </div>
+        <a class="scroll-hint" href="#homeMore" aria-label="เลื่อนลงเพื่อดูรายละเอียด"><span aria-hidden="true">⌄</span></a>
+      </div>
+
+      <div class="home-more" id="homeMore">
+        <div class="card home-intro">
+          <h2>ขั้นตอนการเรียนรู้</h2>
+          <p class="lead-sub">เว็บไซต์นี้พัฒนาขึ้นเพื่อส่งเสริมความรอบรู้ด้านสุขภาพเกี่ยวกับโรคซิฟิลิส และศึกษาผลของโปรแกรมต่อพฤติกรรมการป้องกันความเสี่ยงการเกิดโรคซิฟิลิสของนักศึกษามหาวิทยาลัยอุบลราชธานี ใช้เวลาครั้งแรกประมาณ <span data-cfg="DURATION_MIN"></span> นาที และกลับมาอีกครั้งหลัง 1 สัปดาห์ประมาณ <span data-cfg="DURATION_POST_MIN"></span> นาที</p>
+          <ol class="steps-mini">
+            <li>แบบประเมินพฤติกรรมก่อนศึกษา</li>
+            <li>อ่านเนื้อหา 9 หัวข้อ</li>
+            <li>รอ 1 สัปดาห์ แล้วทำแบบประเมินหลังศึกษา</li>
+            <li>ดูผลของคุณ</li>
+          </ol>
+        </div>
+        <div class="pillars">
+          <div class="pillar"><span class="p-ic" aria-hidden="true">🧪</span><strong>ตรวจได้</strong><p>บางระยะไม่มีอาการ การตรวจช่วยค้นหาการติดเชื้อ</p></div>
+          <div class="pillar"><span class="p-ic" aria-hidden="true">💉</span><strong>รักษาได้</strong><p>การรักษาที่เหมาะสมขึ้นอยู่กับระยะของโรค</p></div>
+          <div class="pillar"><span class="p-ic" aria-hidden="true">🛡️</span><strong>ป้องกันได้</strong><p>ถุงยางอนามัยช่วยลดความเสี่ยง แต่ควรใช้ร่วมกับการตรวจตามความเสี่ยง</p></div>
+        </div>
+        <div class="credits card" data-credits></div>
+      </div>
+    </section>
+
+    <!-- หน้ายินยอม -->
+    <section class="view" id="view-consent" data-view="consent" hidden>
+      <div class="card narrow">
+        <p class="eyebrow">ขั้นที่ 1 · การยินยอม</p>
+        <h2>เอกสารชี้แจงผู้เข้าร่วมการวิจัย</h2>
+        <div class="doc">
+          <p><strong>ชื่อโครงการ</strong> ผลของโปรแกรมส่งเสริมความรอบรู้ด้านสุขภาพผ่านเว็บไซต์ต่อพฤติกรรมการป้องกันความเสี่ยงการเกิดโรคซิฟิลิสของนักศึกษามหาวิทยาลัยอุบลราชธานี</p>
+          <p><strong>ผู้วิจัย</strong> คณะผู้จัดทำ</p>
+          <div data-cfg="RESEARCHER_NAME"></div>
+          <p><span data-cfg="RESEARCHER_UNIT"></span><br>
+             <strong>อาจารย์ที่ปรึกษา</strong> <span data-cfg="ADVISOR_NAME"></span></p>
+          <p><strong>วัตถุประสงค์</strong> เพื่อศึกษาผลของการเรียนรู้ผ่านเว็บไซต์ต่อพฤติกรรมการป้องกันโรคซิฟิลิสของนักศึกษา</p>
+          <p><strong>สิ่งที่ท่านจะได้ทำ</strong> แบ่งเป็น 2 ครั้ง ห่างกัน 1 สัปดาห์<br>
+             <strong>ครั้งที่ 1</strong> กรอกข้อมูลทั่วไป ตั้งรหัสส่วนตัว ทำแบบประเมินพฤติกรรมก่อนศึกษา 14 ข้อ และศึกษาเนื้อหาเรื่องโรคซิฟิลิส ใช้เวลาประมาณ <span data-cfg="DURATION_MIN"></span> นาที<br>
+             <strong>ครั้งที่ 2</strong> (หลังครบ 7 วัน) ใส่รหัสส่วนตัว ทำแบบประเมินพฤติกรรมหลังศึกษา 14 ข้อ และแบบประเมินความพึงพอใจ (ไม่บังคับ) ใช้เวลาประมาณ <span data-cfg="DURATION_POST_MIN"></span> นาที</p>
+          <p><strong>ความเสี่ยงที่อาจเกิดขึ้น</strong> คำถามบางข้อเกี่ยวกับพฤติกรรมทางเพศซึ่งอาจทำให้รู้สึกไม่สบายใจ ท่านสามารถหยุดทำได้ทุกเมื่อ</p>
+          <p><strong>ประโยชน์ที่จะได้รับ</strong> ได้รับความรู้เรื่องโรคซิฟิลิส การป้องกัน และแนวทางดูแลตนเอง และได้ทราบผลประเมินพฤติกรรมของตนเอง</p>
+          <p><strong>การรักษาความลับ</strong> การวิจัยนี้ไม่เก็บชื่อ หรือรหัสนักศึกษา ใช้<strong>รหัสส่วนตัวที่ท่านตั้งเอง</strong>เพื่อจับคู่คำตอบครั้งที่ 1 และ 2 ระบบเก็บรหัสในรูปแบบที่เข้ารหัสแล้ว ผู้วิจัยไม่สามารถเห็นรหัสของท่านได้<br>
+             <strong>อีเมล</strong>ของท่านใช้เพื่อส่งการแจ้งเตือนเมื่อครบ 7 วันเท่านั้น เก็บแยกจากคำตอบ และ<strong>ถูกลบออกจากระบบทันทีหลังส่งการแจ้งเตือน</strong><br>
+             ข้อมูลจะถูกใช้เพื่อการวิจัยเท่านั้น และนำเสนอในภาพรวม <span data-cfg="DATA_RETENTION"></span></p>
+          <p><strong>การเข้าร่วมเป็นไปโดยสมัครใจ</strong> ท่านมีสิทธิ์ไม่เข้าร่วมหรือถอนตัวได้ทุกเมื่อ โดยไม่มีผลกระทบใด ๆ ต่อการศึกษาของท่าน</p>
+          <p><strong>ติดต่อสอบถาม</strong> <span data-cfg="CONTACT_NAME"></span><span data-cfg-wrap="CONTACT_PHONE"> โทร <span data-cfg="CONTACT_PHONE"></span></span> อีเมล <a data-cfg="CONTACT_EMAIL" data-mailto></a><br>
+             โครงการนี้ได้รับการรับรองจากคณะกรรมการจริยธรรมการวิจัยในมนุษย์ มหาวิทยาลัยอุบลราชธานี เลขที่ <span data-cfg="ETHICS_NO"></span></p>
+        </div>
+        <label class="check">
+          <input type="checkbox" id="consentRead">
+          <span>ข้าพเจ้าได้อ่านและเข้าใจรายละเอียดข้างต้นแล้ว ยินยอมเข้าร่วมการวิจัยด้วยความสมัครใจ</span>
+        </label>
+        <p class="field-error" id="consentErr" hidden>กรุณาติ๊กช่องด้านบนก่อนกด “ยินยอม”</p>
+        <div class="actions">
+          <button class="btn btn-ghost" type="button" id="btnDecline">ไม่ยินยอม</button>
+          <button class="btn btn-primary" type="button" id="btnAccept">ยินยอม</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ข้อมูลทั่วไป -->
+    <section class="view" id="view-info" data-view="info" hidden>
+      <form class="card narrow" id="infoForm" novalidate>
+        <p class="eyebrow">ขั้นที่ 2 · ข้อมูลทั่วไป</p>
+        <h2>ข้อมูลทั่วไป</h2>
+        <p class="muted">ไม่มีการเก็บชื่อหรือรหัสนักศึกษา</p>
+        <div id="infoFields"></div>
+
+        <div class="code-box">
+          <h3>ตั้งรหัสส่วนตัว</h3>
+          <p class="muted">ใช้สำหรับกลับมาทำแบบประเมินหลังเรียนในอีก 1 สัปดาห์ <strong>ต้องมีทั้งตัวอักษรและตัวเลข</strong> ยาว 6–20 ตัว ไม่มีช่องว่าง เช่น <code>mint2547</code> หรือ <code>ข้าวหอม99</code> กรุณาจดหรือแคปหน้าจอเก็บไว้</p>
+          <div class="field" data-field="code">
+            <label class="lbl" for="f_code">รหัสส่วนตัว<span class="req" aria-hidden="true">*</span></label>
+            <input class="text-in" type="text" id="f_code" name="code" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="20" aria-describedby="codeRules">
+            <ul class="rules" id="codeRules" aria-live="polite">
+              <li data-rule="len">ยาว 6–20 ตัว</li>
+              <li data-rule="letter">มีตัวอักษรอย่างน้อย 1 ตัว</li>
+              <li data-rule="digit">มีตัวเลขอย่างน้อย 1 ตัว</li>
+              <li data-rule="space">ไม่มีช่องว่าง</li>
+            </ul>
+            <p class="field-error" hidden></p>
+          </div>
+          <div class="field" data-field="code2">
+            <label class="lbl" for="f_code2">ยืนยันรหัสส่วนตัว<span class="req" aria-hidden="true">*</span></label>
+            <input class="text-in" type="text" id="f_code2" name="code2" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="20">
+            <p class="field-error" hidden>รหัสทั้งสองช่องไม่ตรงกัน</p>
+          </div>
+          <div class="field" data-field="email">
+            <label class="lbl" for="f_email">อีเมลสำหรับแจ้งเตือนเมื่อครบ 7 วัน<span class="req" aria-hidden="true">*</span></label>
+            <input class="text-in" type="email" id="f_email" name="email" autocomplete="email" inputmode="email" placeholder="name@example.com">
+            <p class="hint">ใช้ส่งการแจ้งเตือนครั้งเดียว และลบออกจากระบบทันทีหลังส่ง ไม่เก็บรวมกับคำตอบ</p>
+            <p class="field-error" hidden>กรุณากรอกอีเมลให้ถูกต้อง</p>
+          </div>
+        </div>
+
+        <label class="check consent-final">
+          <input type="checkbox" name="consent_final" id="consentFinal">
+          <span><strong>ฉันยินยอม</strong>ให้ใช้ข้อมูลและคำตอบของฉันเพื่อการวิจัยครั้งนี้</span>
+        </label>
+        <p class="field-error" id="consentFinalErr" hidden>กรุณาติ๊ก “ฉันยินยอม” เพื่อไปต่อ</p>
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">ไปแบบประเมินก่อนเรียน</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- แบบประเมินก่อนเรียน -->
+    <section class="view" id="view-pre" data-view="pre" hidden>
+      <form class="card narrow" id="preForm" novalidate></form>
+    </section>
+
+    <!-- เนื้อหา -->
+    <section class="view" id="view-content" data-view="content" hidden>
+      <div class="content-wrap">
+        <div class="content-head">
+          <p class="eyebrow">ขั้นที่ 4 · เนื้อหา</p>
+          <h2>รู้ทันซิฟิลิส</h2>
+          <p class="muted" id="contentHint">อ่านให้ครบทั้ง 9 หัวข้อ แล้วกดปุ่มด้านล่างเพื่อบันทึกและรับวันนัดทำแบบประเมินหลังเรียน</p>
+        </div>
+        <div class="tabs" role="tablist" aria-label="หัวข้อเนื้อหา" id="tabs"></div>
+        <article class="card topic" id="topic" role="tabpanel" tabindex="-1"></article>
+        <div class="card media-card" id="externalMedia"></div>
+        <div class="content-foot">
+          <p class="read-count" id="readCount"></p>
+          <button class="btn btn-primary" type="button" id="btnToPost" disabled>อ่านครบแล้ว บันทึกและรับวันนัด</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- รอ 1 สัปดาห์ -->
+    <section class="view" id="view-wait" data-view="wait" hidden>
+      <div class="card narrow wait" id="waitCard"></div>
+    </section>
+
+    <!-- กลับมาทำต่อด้วยรหัสส่วนตัว -->
+    <section class="view" id="view-resume" data-view="resume" hidden>
+      <form class="card narrow" id="resumeForm" novalidate>
+        <p class="eyebrow">กลับมาทำแบบประเมินหลังเรียน</p>
+        <h2>ใส่รหัสส่วนตัว</h2>
+        <p class="muted">ใช้รหัสที่ท่านตั้งไว้ตอนทำครั้งแรก</p>
+        <div class="field" data-field="rcode">
+          <label class="lbl" for="f_rcode">รหัสส่วนตัว</label>
+          <input class="text-in" type="text" id="f_rcode" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="20">
+          <p class="field-error" id="resumeErr" role="alert" hidden></p>
+        </div>
+        <div class="actions">
+          <button class="btn btn-ghost" type="button" data-nav="home">ยกเลิก</button>
+          <button class="btn btn-primary" type="submit" id="btnResumeGo">ไปต่อ</button>
+        </div>
+        <p class="fine">ยังไม่เคยทำครั้งแรก? <button type="button" class="link" id="btnResumeStart">เริ่มต้นที่นี่</button></p>
+      </form>
+    </section>
+
+    <!-- แบบประเมินหลังเรียน -->
+    <section class="view" id="view-post" data-view="post" hidden>
+      <form class="card narrow" id="postForm" novalidate></form>
+    </section>
+
+    <!-- สรุปผล -->
+    <section class="view" id="view-summary" data-view="summary" hidden>
+      <div class="card narrow" id="summaryCard"></div>
+    </section>
+
+    <!-- ขอบคุณ -->
+    <section class="view" id="view-thanks" data-view="thanks" hidden>
+      <div class="card narrow thanks">
+        <img class="thanks-logo" src="assets/logo-nursing-ubu.svg" alt="ตราคณะพยาบาลศาสตร์ มหาวิทยาลัยอุบลราชธานี" width="88" height="88">
+        <svg class="thanks-art" viewBox="0 0 300 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <ellipse cx="150" cy="200" rx="110" ry="12" fill="#ECE0DA"/>
+          <path d="M150 182 C98 148 70 120 70 88 C70 62 90 42 115 42 C130 42 143 50 150 63 C157 50 170 42 185 42 C210 42 230 62 230 88 C230 120 202 148 150 182 Z" fill="#F6B0BB"/>
+          <path d="M150 160 C112 134 92 114 92 90 C92 74 104 62 120 62 C132 62 142 69 150 80 C158 69 168 62 180 62 C196 62 208 74 208 90 C208 114 188 134 150 160 Z" fill="#F1C8CB"/>
+          <path d="M40 120 c-14 -10 -14 -30 0 -36 c8 14 8 26 0 36 z" fill="#9CAD8C"/>
+          <path d="M40 120 c14 -10 30 -6 34 8 c-14 4 -26 2 -34 -8 z" fill="#7E8C69"/>
+          <path d="M260 120 c14 -10 14 -30 0 -36 c-8 14 -8 26 0 36 z" fill="#9CAD8C"/>
+          <path d="M260 120 c-14 -10 -30 -6 -34 8 c14 4 26 2 34 -8 z" fill="#7E8C69"/>
+          <circle cx="62" cy="40" r="5" fill="#F6B0BB"/><circle cx="238" cy="34" r="7" fill="#9CAD8C"/><circle cx="270" cy="70" r="4" fill="#F6B0BB"/><circle cx="30" cy="70" r="4" fill="#9CAD8C"/>
+          <text x="150" y="122" text-anchor="middle" font-size="30" font-weight="700" fill="#3E4733" font-family="Anuphan, sans-serif">ขอบคุณ</text>
+        </svg>
+        <h2>ขอบคุณที่เข้าร่วม</h2>
+        <p class="thanks-msg" id="thanksMsg"></p>
+
+        <form class="sat" id="satForm" novalidate>
+          <h3>ประเมินความพึงพอใจต่อเว็บไซต์</h3>
+          <p class="muted">ไม่บังคับ ให้คะแนน 1–5 ดาว ข้ามข้อที่ไม่ต้องการตอบได้</p>
+          <div id="satItems"></div>
+          <label class="lbl" for="satComment">ข้อเสนอแนะเพิ่มเติม</label>
+          <textarea id="satComment" rows="4" maxlength="1000" placeholder="สิ่งที่ชอบ หรือสิ่งที่อยากให้ปรับปรุง"></textarea>
+          <p class="sat-count"><span id="satCommentCount">0</span>/1000</p>
+          <div class="sat-status" id="satStatus" role="status" aria-live="polite"></div>
+          <div class="actions center"><button class="btn btn-primary" type="submit" id="btnSat">ส่งความคิดเห็น</button></div>
+        </form>
+
+        <div class="actions center">
+          <button class="btn btn-primary" type="button" id="btnToAck">ไปต่อ</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- กิตติกรรมประกาศ (หน้าสุดท้าย) -->
+    <section class="view" id="view-ack" data-view="ack" hidden>
+      <div class="card narrow ack">
+        <img class="ack-logo" src="assets/logo-nursing-ubu.svg" alt="ตราคณะพยาบาลศาสตร์ มหาวิทยาลัยอุบลราชธานี" width="120" height="120">
+        <p class="ack-org">คณะพยาบาลศาสตร์<br>มหาวิทยาลัยอุบลราชธานี</p>
+        <hr class="ack-line">
+        <h2>กิตติกรรมประกาศ</h2>
+        <div id="ackBody"></div>
+        <div class="actions center">
+          <button class="btn btn-ghost" type="button" data-nav="content">อ่านเนื้อหาอีกครั้ง</button>
+          <button class="btn btn-primary" type="button" id="btnRestart">เริ่มใหม่สำหรับผู้ตอบคนถัดไป</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- แหล่งข้อมูล -->
+    <section class="view" id="view-sources" data-view="sources" hidden>
+      <div class="card narrow">
+        <p class="eyebrow">แหล่งข้อมูล</p>
+        <h2>แหล่งอ้างอิง</h2>
+        <p class="muted">เนื้อหาในเว็บไซต์นี้เรียบเรียงใหม่จากแหล่งต่อไปนี้ อินโฟกราฟิกและภาพประกอบจัดทำขึ้นใหม่สำหรับเว็บไซต์นี้</p>
+        <ol class="refs" id="refList"></ol>
+        <div class="credits inline" data-credits></div>
+        <div class="actions">
+          <button class="btn btn-ghost" type="button" id="btnSourcesBack">ย้อนกลับ</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog class="lightbox" id="lightbox" aria-label="ดูภาพขยาย">
+    <button class="lightbox-close" type="button" id="lightboxClose" aria-label="ปิด">✕</button>
+    <div class="lightbox-body" id="lightboxBody"></div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
