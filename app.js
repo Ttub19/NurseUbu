@@ -890,6 +890,18 @@
       var w = r.mean == null ? 0 : (r.mean / mx) * 100;
       return '<div class="bar-row"><span>' + label + '</span><div class="bar-track"><div class="bar-fill ' + cls + '" style="width:' + Math.max(w, 2) + '%"></div></div><span>' + (r.mean == null ? "—" : r.mean.toFixed(2)) + "</span></div>";
     }
+    // ตารางเกณฑ์แปลผล ไฮไลต์ระดับของผู้ตอบ (ก่อน/หลัง)
+    function criteriaTable(levels, lo, hi, rPre, rPost, unit) {
+      var rows = levels.slice().sort(function (a, b) { return a.min - b.min; });
+      return '<table class="crit"><caption>เกณฑ์การแปลผล (' + unit + ')</caption><thead><tr><th scope="col">คะแนนเฉลี่ย</th><th scope="col">ระดับ</th><th scope="col">ผลของท่าน</th></tr></thead><tbody>' +
+        rows.map(function (l, i) {
+          var from = Math.max(l.min, lo), to = i < rows.length - 1 ? rows[i + 1].min - 0.01 : hi;
+          var mine = [];
+          if (rPre.level && rPre.level.key === l.key) mine.push("ก่อน");
+          if (rPost.level && rPost.level.key === l.key) mine.push("หลัง");
+          return '<tr class="' + (mine.length ? "is-mine " : "") + l.key + '"><td>' + from.toFixed(2) + "–" + to.toFixed(2) + '</td><td><span class="badge ' + l.key + '">' + esc(l.label) + "</span></td><td>" + (mine.length ? "◀ " + mine.join(" / ") : "") + "</td></tr>";
+        }).join("") + "</tbody></table>";
+    }
     // ความรอบรู้: คะแนนเพิ่มขึ้น = ดีขึ้น
     var hlChange = "";
     if (hlPre.mean != null && hlPost.mean != null) {
@@ -898,18 +910,13 @@
         (hd > 0 ? "▲ คะแนนความรอบรู้เพิ่มขึ้น " + hd.toFixed(2) + " คะแนน" : hd < 0 ? "▼ คะแนนความรอบรู้ลดลง " + Math.abs(hd).toFixed(2) + " คะแนน" : "● คะแนนความรอบรู้เท่าเดิม") + "</p>";
     }
     var hlMain = hlPost.level || hlPre.level;
-    var hlLevels = D.hlpre.levels.slice().reverse();
-    var hlCriteria = hlLevels.map(function (l, i) {
-      var hi = i < hlLevels.length - 1 ? (hlLevels[i + 1].min - 0.01).toFixed(2) : hlMax.toFixed(2);
-      return Math.max(l.min, 1).toFixed(2) + "–" + hi + " " + l.label.replace("ความรอบรู้", "");
-    }).join(" · ");
     var hlHtml =
       '<h3 class="sum-h">1. ความรอบรู้ด้านสุขภาพเกี่ยวกับโรคซิฟิลิส</h3>' +
       '<p class="muted">คะแนนเฉลี่ย 1–' + hlMax + ' <strong>คะแนนยิ่งสูง ยิ่งมีความรอบรู้มาก</strong></p>' +
       '<div class="score-grid">' + scoreBox("ก่อนเข้าร่วมโปรแกรม", hlPre, "before", hlMax) + scoreBox("หลังเข้าร่วมโปรแกรม", hlPost, "after", hlMax) + "</div>" +
       '<div class="bars">' + bar("ก่อน", hlPre, "before", hlMax) + bar("หลัง", hlPost, "after", hlMax) + "</div>" + hlChange +
       (hlMain ? '<div class="advice ' + hlMain.key + '"><h4>' + hlMain.label + "</h4><p>" + esc(hlMain.message) + "</p></div>" : "") +
-      '<p class="muted small">เกณฑ์: ' + hlCriteria + "</p>";
+      criteriaTable(D.hlpre.levels, 1, hlMax, hlPre, hlPost, "คะแนนเฉลี่ย 1–" + hlMax + " ยิ่งสูงยิ่งดี");
     var change = "";
     if (pre.mean != null && post.mean != null) {
       var d = Math.round((post.mean - pre.mean) * 100) / 100;
@@ -926,7 +933,7 @@
       (main ? '<div class="advice ' + main.key + '"><h4>' + main.label + "</h4><p>" + esc(main.message) + '</p><p class="tips-h">คำแนะนำ</p><ul>' +
         main.tips.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul></div>" : "") +
       '<p class="disclaimer">' + esc(D.disclaimer) + "</p>" +
-      '<p class="muted small">เกณฑ์: 0.00–1.33 ความเสี่ยงต่ำ · 1.34–2.67 ความเสี่ยงปานกลาง · 2.68–4.00 ความเสี่ยงสูง</p>' +
+      criteriaTable(D.levels, 0, max, pre, post, "คะแนนเฉลี่ย 0–" + max + " ยิ่งต่ำยิ่งดี") +
       '<div class="save-status ok">✓ บันทึกคำตอบทั้ง 2 ครั้ง (ครั้งละ 2 ชุด) เรียบร้อยแล้ว</div>' +
       '<div class="actions"><button class="btn btn-ghost" type="button" data-nav="content">ทบทวนเนื้อหา</button><button class="btn btn-primary" type="button" id="btnToThanks">ไปต่อ</button></div>';
     $("#btnToThanks").addEventListener("click", function () { go("thanks"); });

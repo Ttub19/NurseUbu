@@ -568,3 +568,12 @@ body.on-home .deco { display: none; }
 .dev-credit { max-width: 560px; margin: 18px auto 0; border: 1px dashed var(--line); border-radius: var(--radius-sm); padding: 14px 18px; }
 .dev-credit p { margin: 0; }
 .dev-credit .muted { font-size: .88rem; margin-bottom: 4px; }
+
+/* ---------- ตารางเกณฑ์แปลผล (หน้าสรุปผล) ---------- */
+.crit { width: 100%; border-collapse: collapse; margin: 14px 0 6px; font-size: .95rem; }
+.crit caption { text-align: left; font-family: var(--font-head); font-weight: 600; margin-bottom: 6px; color: var(--ink); }
+.crit th, .crit td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.crit th { font-size: .85rem; color: var(--ink-soft); font-weight: 600; }
+.crit td:first-child { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.crit tr.is-mine td { background: #FBF6EE; font-weight: 700; }
+.crit tr.is-mine td:last-child { color: var(--btn); }
