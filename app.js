@@ -6,7 +6,9 @@
   var STEPS = ["home", "consent", "info", "hlpre", "pre", "content", "skills", "wait", "hlpost", "post", "summary", "thanks", "ack"];
   var ASSESS = ["hlpre", "pre", "hlpost", "post"];
   var STORE_KEY = "sexed_state_v4";
-  var WAIT_MS = (Number(CFG.WAIT_DAYS) > 0 ? Number(CFG.WAIT_DAYS) : 7) * 864e5;
+  var LOCK = CFG.LOCK_POST !== false; // false = ปิดล็อก 7 วัน ทำแบบประเมินหลังเรียนได้ทันที
+  var WAIT_DAYS = Number(CFG.WAIT_DAYS) > 0 ? Number(CFG.WAIT_DAYS) : 7;
+  var WAIT_MS = LOCK ? WAIT_DAYS * 864e5 : 0;
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
 
@@ -49,7 +51,7 @@
   function allTopicsRead() { return D.sections.every(function (s) { return S.read.indexOf(s.id) !== -1; }); }
   function skillDone(d) { return S.skillRead.indexOf(d.id) > -1 && d.quiz.every(function (q) { return S.skillQuiz[q.id] != null; }); }
   function allSkillsDone() { return D.hlDomains.every(skillDone); }
-  function unlocked() { return S.unlockAt && Date.now() >= new Date(S.unlockAt).getTime(); }
+  function unlocked() { if (!LOCK) return !!S.stage1Saved; return S.unlockAt && Date.now() >= new Date(S.unlockAt).getTime(); }
   function newId() {
     var a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", s = "";
     var buf = (window.crypto && crypto.getRandomValues) ? crypto.getRandomValues(new Uint32Array(8)) : null;
@@ -532,7 +534,7 @@
       btn.disabled = false; btn.textContent = "ดูผลของฉัน"; hint.textContent = "ท่านทำครบทั้ง 2 ครั้งแล้ว อ่านทบทวนได้ตลอด";
     } else if (S.stage1Saved) {
       btn.disabled = false; btn.textContent = unlocked() ? "ทำแบบประเมินหลังเรียน" : "ดูวันนัดของฉัน";
-      hint.textContent = unlocked() ? "ครบ 7 วันแล้ว ทำแบบประเมินหลังเรียนได้เลย" : "อ่านทบทวนได้ระหว่างรอครบ 7 วัน";
+      hint.textContent = unlocked() ? (LOCK ? "ครบ 7 วันแล้ว ทำแบบประเมินหลังเรียนได้เลย" : "ทำแบบประเมินหลังเรียนได้เลย") : "อ่านทบทวนได้ระหว่างรอครบ 7 วัน";
     } else {
       btn.disabled = !all; btn.textContent = "อ่านครบแล้ว ไปเนื้อหาความรอบรู้ 6 ด้าน";
       hint.textContent = all ? "อ่านครบแล้ว กดปุ่มด้านล่างเพื่อไปศึกษาเนื้อหาและทำแบบฝึกทักษะความรอบรู้ด้านสุขภาพ 6 ด้าน" : "อ่านให้ครบทั้ง " + D.sections.length + " หัวข้อ แล้วกดปุ่มด้านล่างเพื่อไปเนื้อหาความรอบรู้ด้านสุขภาพ 6 ด้าน";
@@ -664,7 +666,7 @@
     if (S.postSaved) { btn.disabled = false; btn.textContent = "ดูผลของฉัน"; hint.textContent = "ท่านทำครบทั้ง 2 ครั้งแล้ว ทบทวนได้ตลอด"; }
     else if (S.stage1Saved) {
       btn.disabled = false; btn.textContent = unlocked() ? "ทำแบบประเมินหลังเรียน" : "ดูวันนัดของฉัน";
-      hint.textContent = unlocked() ? "ครบ 7 วันแล้ว ทำแบบประเมินหลังเรียนได้เลย" : "ทบทวนได้ระหว่างรอครบ 7 วัน";
+      hint.textContent = unlocked() ? (LOCK ? "ครบ 7 วันแล้ว ทำแบบประเมินหลังเรียนได้เลย" : "ทำแบบประเมินหลังเรียนได้เลย") : "ทบทวนได้ระหว่างรอครบ 7 วัน";
     } else {
       btn.disabled = n < total; btn.textContent = "ทำครบแล้ว บันทึกและรับวันนัด";
       hint.textContent = n < total ? "ศึกษาเนื้อหาและทำแบบฝึกทักษะให้ครบทั้ง " + total + " ด้าน แล้วกดปุ่มด้านล่างเพื่อบันทึกและรับวันนัดทำแบบประเมินหลังเรียน" : "ทำครบทั้ง " + total + " ด้านแล้ว กดปุ่มด้านล่างเพื่อบันทึกและรับวันนัดทำแบบประเมินหลังเรียน";
@@ -757,6 +759,20 @@
       if (isNaN(t)) {
         card.innerHTML = '<h2>ยังไม่ได้รับวันนัดจากระบบ</h2><p>การบันทึกครั้งที่ 1 ยังไม่สมบูรณ์ กรุณากดบันทึกอีกครั้ง</p><div class="actions"><button class="btn btn-primary" type="button" id="btnRetry1">บันทึกอีกครั้ง</button></div>';
         $("#btnRetry1").addEventListener("click", function () { S.stage1Saved = false; if (!S.email) S.info.consent_final = false; save(); go(S.email ? "content" : "info"); });
+        return;
+      }
+      if (!LOCK) {
+        card.innerHTML = '<p class="eyebrow">บันทึกครั้งที่ 1 เรียบร้อย</p><h2>ทำแบบประเมินหลังเรียนได้เลย</h2><p>ท่านทำแบบประเมินหลังเข้าร่วมโปรแกรมได้ทันที 2 ชุด คือ แบบประเมินความรอบรู้ด้านสุขภาพ ' + D.hlpost.items.length + ' ข้อ และแบบประเมินพฤติกรรม ' + D.post.items.length + ' ข้อ ใช้เวลาประมาณ ' + esc(CFG.DURATION_POST_MIN || "15") + ' นาที</p>' +
+          '<div class="code-remind"><div><span>รหัสส่วนตัวของท่าน</span><strong id="myCode" data-shown="0">••••••</strong></div><button type="button" class="btn btn-ghost btn-sm" id="btnShowCode">แสดงรหัส</button></div>' +
+          '<ul class="wait-notes"><li>🔑 ถ้าจะกลับมาทำภายหลัง กด "กลับมาทำแบบประเมินหลังเรียน" ที่หน้าแรก แล้วใส่รหัสส่วนตัว ใช้ได้จากทุกเครื่อง</li>' +
+          '<li>📧 ระบบจะส่งอีเมลเตือนเมื่อครบ ' + WAIT_DAYS + ' วัน หากท่านยังไม่ได้ทำ</li></ul>' +
+          '<div class="actions"><button class="btn btn-ghost" type="button" data-nav="content">อ่านเนื้อหาอีกครั้ง</button><button class="btn btn-primary" type="button" id="btnGoPost">ทำแบบประเมินหลังเรียน</button></div>';
+        $("#btnGoPost").addEventListener("click", function () { go("hlpost"); });
+        var shown0 = false;
+        $("#btnShowCode").addEventListener("click", function () {
+          shown0 = !shown0; $("#myCode").textContent = shown0 ? S.code : "••••••"; this.textContent = shown0 ? "ซ่อนรหัส" : "แสดงรหัส";
+        });
+        clearInterval(waitTimer);
         return;
       }
       var left = t - Date.now();

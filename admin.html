@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>แอดมิน | Sex Education</title>
+  <title>แอดมิน | UBU Sex Education</title>
   <link rel="icon" href="assets/logo-nursing-ubu.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,7 +17,7 @@
   <!-- เข้าสู่ระบบ -->
   <section id="loginView" class="login-wrap">
     <form class="card login" id="loginForm" novalidate>
-      <div class="login-brand"><img src="assets/logo-nursing-ubu.svg" alt="" width="44" height="44"><div><strong>Sex Education</strong><span>สำหรับผู้วิจัย</span></div></div>
+      <div class="login-brand"><img src="assets/logo-nursing-ubu.svg" alt="" width="44" height="44"><div><strong>UBU Sex Education</strong><span>สำหรับผู้วิจัย</span></div></div>
       <h1>เข้าสู่หน้าแอดมิน</h1>
       <label class="lbl" for="pw">รหัสผ่าน</label>
       <div class="pw-row">
@@ -38,7 +38,7 @@
   <div id="appView" hidden>
     <header class="a-top">
       <div class="a-top-in">
-        <div class="a-brand"><img src="assets/logo-nursing-ubu.svg" alt="" width="30" height="30"><span>Sex Education <em>แอดมิน</em></span></div>
+        <div class="a-brand"><img src="assets/logo-nursing-ubu.svg" alt="" width="30" height="30"><span>UBU Sex Education <em>แอดมิน</em></span></div>
         <div class="a-actions">
           <span class="fetched" id="fetchedAt" aria-live="polite"></span>
           <button class="btn btn-ghost btn-sm" type="button" id="refreshBtn"><span aria-hidden="true">↻</span> รีเฟรช</button>
@@ -61,32 +61,49 @@
           <div><label class="lbl" for="fFaculty">คณะ</label><select id="fFaculty"></select></div>
           <div><label class="lbl" for="fGender">เพศ</label><select id="fGender"></select></div>
           <div><label class="lbl" for="fYear">ชั้นปี</label><select id="fYear"></select></div>
-          <div><label class="lbl" for="fSex">เคยมีเพศสัมพันธ์</label><select id="fSex"></select></div>
+          <div><label class="lbl" for="fSex">ประวัติการมีเพศสัมพันธ์</label><select id="fSex"></select></div>
           <div><label class="lbl" for="fStatus">สถานะ</label><select id="fStatus"></select></div>
           <div><label class="lbl" for="fFrom">ตั้งแต่วันที่</label><input type="date" id="fFrom"></div>
           <div><label class="lbl" for="fTo">ถึงวันที่</label><input type="date" id="fTo"></div>
         </div>
         <div class="f-foot">
-          <label class="switch"><input type="checkbox" id="fUbu" checked><span class="sw" aria-hidden="true"></span>เฉพาะนักศึกษา ม.อุบลฯ <small>(คัดป้าย NON-UBU ออก)</small></label>
           <span class="count" id="resultCount"></span>
           <button class="link" type="button" id="clearBtn">ล้างตัวกรอง</button>
         </div>
       </section>
 
+      <!-- ความรอบรู้ด้านสุขภาพ -->
+      <h2 class="a-sec-h">ความรอบรู้ด้านสุขภาพเกี่ยวกับโรคซิฟิลิส <small class="muted">(30 ข้อ · คะแนน 1–5 · สูง = รอบรู้มาก)</small></h2>
+      <section class="kpis kpis-hl" id="hlKpis" aria-label="สรุปความรอบรู้ด้านสุขภาพ"></section>
+      <div class="two-col">
+        <section class="panel" aria-labelledby="hlStatsH">
+          <h2 id="hlStatsH">สถิติเปรียบเทียบความรอบรู้ก่อน–หลัง</h2>
+          <p class="muted small">Paired t-test คำนวณจากข้อมูลที่กรองอยู่ เฉพาะผู้ที่มีคะแนนความรอบรู้ทั้งก่อนและหลัง</p>
+          <div id="hlStats"></div>
+        </section>
+        <section class="panel" aria-labelledby="hlLvH">
+          <h2 id="hlLvH">จำนวนผู้ตอบแต่ละระดับความรอบรู้</h2>
+          <div class="legend"><span><i class="sw-before"></i>ก่อนเข้าร่วมโปรแกรม</span><span><i class="sw-after"></i>หลังเข้าร่วมโปรแกรม</span></div>
+          <div id="hlLevelChart"></div>
+        </section>
+      </div>
+
+      <!-- พฤติกรรม -->
+      <h2 class="a-sec-h">พฤติกรรมการป้องกันความเสี่ยงการเกิดโรคซิฟิลิส <small class="muted">(14 ข้อ · คะแนน 0–4 · สูง = เสี่ยงมาก)</small></h2>
       <!-- การ์ดสรุป -->
       <section class="kpis" id="kpis" aria-label="สรุปภาพรวม"></section>
 
       <div class="two-col">
         <!-- สถิติ -->
         <section class="panel" aria-labelledby="statsH">
-          <h2 id="statsH">สถิติเปรียบเทียบก่อน–หลัง</h2>
+          <h2 id="statsH">สถิติเปรียบเทียบพฤติกรรมก่อน–หลัง</h2>
           <p class="muted small">Paired t-test คำนวณจากข้อมูลที่กรองอยู่ เฉพาะผู้ที่ทำครบและมีคะแนนทั้งก่อนและหลัง</p>
           <div id="stats"></div>
         </section>
         <!-- กราฟระดับ -->
         <section class="panel" aria-labelledby="lvH">
           <h2 id="lvH">จำนวนผู้ตอบแต่ละระดับความเสี่ยง</h2>
-          <div class="legend"><span><i class="sw-before"></i>ก่อน (พฤติกรรม 3 เดือนที่ผ่านมา)</span><span><i class="sw-after"></i>หลัง (พฤติกรรม 1 สัปดาห์ที่ผ่านมา)</span></div>
+          <div class="legend"><span><i class="sw-before"></i>ก่อนเข้าร่วมโปรแกรม</span><span><i class="sw-after"></i>หลังเข้าร่วมโปรแกรม</span></div>
           <div id="levelChart"></div>
         </section>
       </div>
