@@ -3,8 +3,9 @@
 
   var CFG = window.APP_CONFIG || {};
   var D = window.APP_DATA;
-  var STEPS = ["home", "consent", "info", "pre", "content", "wait", "post", "summary", "thanks", "ack"];
-  var STORE_KEY = "sexed_state_v2";
+  var STEPS = ["home", "consent", "info", "hlpre", "pre", "content", "skills", "wait", "hlpost", "post", "summary", "thanks", "ack"];
+  var ASSESS = ["hlpre", "pre", "hlpost", "post"];
+  var STORE_KEY = "sexed_state_v4";
   var WAIT_MS = (Number(CFG.WAIT_DAYS) > 0 ? Number(CFG.WAIT_DAYS) : 7) * 864e5;
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
@@ -15,9 +16,10 @@
   function freshState() {
     return {
       view: "home", max: 0, id: "", startedAt: "", info: {}, code: "", email: "",
-      pre: {}, preCompleted: false, read: [], topic: 0,
+      hlpre: {}, hlPreCompleted: false, pre: {}, preCompleted: false, read: [], topic: 0,
+      skillRead: [], skillTopic: 0, skillQuiz: {},
       stage1Saved: false, contentDoneAt: "", unlockAt: "",
-      post: {}, postSaved: false, finishedAt: "",
+      hlpost: {}, hlPostCompleted: false, post: {}, postSaved: false, finishedAt: "",
       thankIdx: null, sat: {}, satComment: "", satSaved: false, prevView: "home"
     };
   }
@@ -29,20 +31,24 @@
   }
   function reset() {
     S = freshState();
-    try { localStorage.removeItem(STORE_KEY); sessionStorage.removeItem("sexed_state_v1"); } catch (e) {}
+    try { localStorage.removeItem(STORE_KEY); localStorage.removeItem("sexed_state_v2"); localStorage.removeItem("sexed_state_v3"); sessionStorage.removeItem("sexed_state_v1"); } catch (e) {}
   }
   var S = Object.assign(freshState(), load() || {});
+  ["skillRead"].forEach(function (k) { if (!Array.isArray(S[k])) S[k] = []; });
+  if (!S.skillQuiz || typeof S.skillQuiz !== "object") S.skillQuiz = {};
   var repairedStage1 = false;
   // ซ่อมสถานะที่บันทึกครั้งที่ 1 ไม่สมบูรณ์ (เคยส่งไปยัง Code.gs เวอร์ชันเก่า จึงไม่ได้วันนัดกลับมา)
   if (S.stage1Saved && !S.postSaved && (!S.unlockAt || isNaN(new Date(S.unlockAt).getTime()))) {
     S.stage1Saved = false; S.unlockAt = "";
     if (!S.email) S.info.consent_final = false; // ต้องกรอกอีเมลใหม่
-    if (S.view === "wait" || S.view === "post") S.view = S.email ? "content" : "info";
+    if (["wait", "hlpost", "post"].indexOf(S.view) > -1) S.view = S.email ? "content" : "info";
     repairedStage1 = true;
   }
 
   function idx(v) { return STEPS.indexOf(v); }
   function allTopicsRead() { return D.sections.every(function (s) { return S.read.indexOf(s.id) !== -1; }); }
+  function skillDone(d) { return S.skillRead.indexOf(d.id) > -1 && d.quiz.every(function (q) { return S.skillQuiz[q.id] != null; }); }
+  function allSkillsDone() { return D.hlDomains.every(skillDone); }
   function unlocked() { return S.unlockAt && Date.now() >= new Date(S.unlockAt).getTime(); }
   function newId() {
     var a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", s = "";
@@ -153,9 +159,10 @@
   function nextStep() {
     if (!S.id) return "consent";
     if (!S.info.consent_final) return "info";
+    if (!S.hlPreCompleted) return "hlpre";
     if (!S.preCompleted) return "pre";
-    if (!S.stage1Saved) return "content";
-    if (!S.postSaved) return unlocked() ? "post" : "wait";
+    if (!S.stage1Saved) return allTopicsRead() ? "skills" : "content";
+    if (!S.postSaved) return !unlocked() ? "wait" : S.hlPostCompleted ? "post" : "hlpost";
     return S.view === "thanks" || S.view === "ack" ? S.view : "summary";
   }
 
@@ -163,16 +170,21 @@
   function go(view, opts) {
     opts = opts || {};
     // ด่านตรวจลำดับ
+    if (view === "hlpre" && S.hlPreCompleted) view = "pre";
     if (view === "pre" && S.preCompleted) view = "content";
-    if (view === "post") {
-      if (!S.stage1Saved) { toast(allTopicsRead() ? "กรุณากดบันทึกท้ายหน้าเนื้อหาก่อน" : "กรุณาอ่านเนื้อหาให้ครบทุกหัวข้อก่อน"); view = S.preCompleted ? "content" : nextStep(); }
+    if (view === "hlpost" || view === "post") {
+      if (!S.stage1Saved) { toast(!allTopicsRead() ? "กรุณาอ่านเนื้อหาให้ครบทุกหัวข้อก่อน" : allSkillsDone() ? "กรุณากดบันทึกท้ายหน้าความรอบรู้ 6 ด้านก่อน" : "กรุณาทำแบบฝึกทักษะให้ครบทั้ง 6 ด้านก่อน"); view = nextStep(); }
       else if (S.postSaved) view = "summary";
       else if (!unlocked()) view = "wait";
+      else view = S.hlPostCompleted ? "post" : "hlpost";
     }
+    if (view === "skills" && !S.preCompleted) view = nextStep();
+    if (view === "skills" && !S.stage1Saved && !allTopicsRead()) { toast("กรุณาอ่านเนื้อหาให้ครบทั้ง " + D.sections.length + " หัวข้อก่อน"); view = "content"; }
     if (view === "wait" && !S.stage1Saved) view = nextStep();
     if ((view === "summary" || view === "thanks" || view === "ack") && !S.postSaved) view = nextStep();
-    if (["pre", "info"].indexOf(view) > -1 && !S.id) view = "consent";
-    if (view === "pre" && !S.info.consent_final) view = "info";
+    if (["hlpre", "pre", "info"].indexOf(view) > -1 && !S.id) view = "consent";
+    if ((view === "hlpre" || view === "pre") && !S.info.consent_final) view = "info";
+    if (view === "pre" && !S.hlPreCompleted) view = "hlpre";
 
     if (view !== "sources") S.prevView = view;
     S.view = view;
@@ -192,13 +204,14 @@
       var k = b.getAttribute("data-nav");
       b.disabled = false;
       var cur = (k === "home" && ["home", "consent", "info", "resume"].indexOf(S.view) > -1) ||
-                (k === "assess" && ["pre", "wait", "post", "summary", "thanks", "ack"].indexOf(S.view) > -1) ||
-                (k === "content" && S.view === "content") ||
+                (k === "assess" && ["hlpre", "pre", "wait", "hlpost", "post", "summary", "thanks", "ack"].indexOf(S.view) > -1) ||
+                (k === "content" && (S.view === "content" || S.view === "skills")) ||
                 (k === "sources" && S.view === "sources");
       if (cur) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
-    var steps = [S.preCompleted, S.stage1Saved, S.postSaved, S.view === "thanks" || S.view === "ack"].filter(Boolean).length;
-    $("#progressBar").style.width = (S.id ? 8 + steps * 23 : 0) + "%";
+    var marks = [S.hlPreCompleted, S.preCompleted, S.stage1Saved, S.hlPostCompleted, S.postSaved, S.view === "thanks" || S.view === "ack"];
+    var steps = marks.filter(Boolean).length;
+    $("#progressBar").style.width = (S.id ? 8 + steps * 92 / marks.length : 0) + "%";
     var start = $("#btnStart");
     start.textContent = !S.id ? "เริ่มต้น" : S.postSaved ? "ดูผลของฉัน" : S.stage1Saved ? (unlocked() ? "ทำแบบประเมินหลังเรียน" : "ดูวันนัดของฉัน") : "ทำต่อจากเดิม";
     $("#btnReturn").hidden = !!S.id;
@@ -250,14 +263,8 @@
   /* ======================================================
      ข้อมูลทั่วไป + รหัสส่วนตัว + อีเมล
      ====================================================== */
-  var INFO_FIELDS = [
-    { name: "is_ubu", label: "ท่านเป็นนักศึกษามหาวิทยาลัยอุบลราชธานีหรือไม่", type: "chips", options: ["ใช่", "ไม่ใช่"] },
-    { name: "gender", label: "เพศ", type: "chips", options: D.genders },
-    { name: "year", label: "ชั้นปีการศึกษา", type: "chips", options: D.years },
-    { name: "faculty", label: "คณะที่กำลังศึกษา", type: "select", options: D.faculties.concat(["อื่น ๆ (ไม่ใช่นักศึกษา ม.อุบลฯ)"]) },
-    { name: "info_sources", label: "ท่านเคยได้รับข้อมูลเกี่ยวกับโรคติดต่อทางเพศสัมพันธ์จากแหล่งใดบ้าง (เลือกได้มากกว่า 1 ข้อ)", type: "multi", options: D.infoSources.concat([D.infoSourceNone]) },
-    { name: "ever_sex", label: "ท่านเคยมีเพศสัมพันธ์หรือไม่", type: "chips", options: ["เคย", "ไม่เคย"] }
-  ];
+  var INFO_FIELDS = D.infoFields;
+  function hasOther(f, v) { return !!f.other && (Array.isArray(v) ? v.indexOf(f.other) > -1 : v === f.other); }
 
   function chipGroup(name, options, current) {
     return options.map(function (o) {
@@ -269,24 +276,37 @@
     }).join("");
   }
 
+  var REQ = '<span class="req" aria-hidden="true">*</span>';
+  // ช่องพิมพ์ "อื่น ๆ ระบุ" (แสดงเมื่อเลือกตัวเลือกนั้น) บันทึกเป็น <name>_other
+  function otherBox(f, cur) {
+    if (!f.other) return "";
+    var id = "f_" + f.name + "_other";
+    return '<div class="other-wrap" data-other-for="' + f.name + '"' + (hasOther(f, cur) ? "" : " hidden") + '><label class="lbl" for="' + id + '">โปรดระบุ' + REQ + "</label>" +
+      '<input class="text-in" type="text" id="' + id + '" name="' + f.name + '_other" maxlength="100" value="' + esc(S.info[f.name + "_other"] || "") + '"></div>';
+  }
   function renderInfo() {
     $("#infoFields").innerHTML = INFO_FIELDS.map(function (f) {
       var cur = S.info[f.name] || "";
+      if (f.type === "number") {
+        return '<div class="field" data-field="' + f.name + '"><label class="lbl" for="f_' + f.name + '">' + f.label + REQ + "</label>" +
+          '<div class="num-row"><input class="text-in num-in" type="number" inputmode="numeric" step="1" min="' + f.min + '" max="' + f.max + '" id="f_' + f.name + '" name="' + f.name + '" value="' + esc(cur) + '"><span>' + esc(f.unit) + "</span></div>" +
+          '<p class="field-error" hidden></p></div>';
+      }
       if (f.type === "select") {
-        return '<div class="field" data-field="' + f.name + '"><label class="lbl" for="f_' + f.name + '">' + f.label + '<span class="req" aria-hidden="true">*</span></label>' +
-          '<select id="f_' + f.name + '" name="' + f.name + '" required><option value="">— เลือกคณะ —</option>' +
+        return '<div class="field" data-field="' + f.name + '"><label class="lbl" for="f_' + f.name + '">' + f.label + REQ + "</label>" +
+          '<select id="f_' + f.name + '" name="' + f.name + '" required><option value="">— เลือก —</option>' +
           f.options.map(function (o) { return "<option" + (cur === o ? " selected" : "") + ">" + esc(o) + "</option>"; }).join("") +
-          '</select><p class="field-error" hidden>กรุณาเลือกคณะ</p></div>';
+          "</select>" + otherBox(f, cur) + '<p class="field-error" hidden></p></div>';
       }
       if (f.type === "multi") {
         var sel = Array.isArray(cur) ? cur : [];
-        return '<fieldset class="field" data-field="' + f.name + '"><legend>' + f.label + '<span class="req" aria-hidden="true">*</span></legend>' +
+        return '<fieldset class="field" data-field="' + f.name + '"><legend>' + f.label + REQ + "</legend>" +
           '<div class="choices">' + f.options.map(function (o) {
             return '<label class="chip multi"><input type="checkbox" name="' + f.name + '" value="' + esc(o) + '"' + (sel.indexOf(o) > -1 ? " checked" : "") + "><span>" + esc(o) + "</span></label>";
-          }).join("") + '</div><p class="field-error" hidden>กรุณาเลือกอย่างน้อย 1 ข้อ</p></fieldset>';
+          }).join("") + "</div>" + otherBox(f, sel) + '<p class="field-error" hidden></p></fieldset>';
       }
-      return '<fieldset class="field" data-field="' + f.name + '"><legend>' + f.label + '<span class="req" aria-hidden="true">*</span></legend>' +
-        '<div class="choices">' + chipGroup(f.name, f.options, cur) + '</div><p class="field-error" hidden>กรุณาเลือกคำตอบ</p></fieldset>';
+      return '<fieldset class="field" data-field="' + f.name + '"><legend>' + f.label + REQ + "</legend>" +
+        '<div class="choices">' + chipGroup(f.name, f.options, cur) + "</div>" + otherBox(f, cur) + '<p class="field-error" hidden></p></fieldset>';
     }).join("");
     $("#f_code").value = S.code || "";
     $("#f_code2").value = S.code || "";
@@ -313,26 +333,27 @@
     if (e.target.id === "f_code") { updateRules(); fieldErr("code"); }
     if (e.target.id === "f_code2") fieldErr("code2");
     if (e.target.id === "f_email") fieldErr("email");
+    // ช่องพิมพ์ (อายุ, อื่น ๆ ระบุ) จำไว้ระหว่างพิมพ์
+    var tf = e.target.closest(".field");
+    if (tf && (e.target.type === "number" || /_other$/.test(e.target.name))) { S.info[e.target.name] = e.target.value; save(); fieldErr(tf.getAttribute("data-field")); }
   });
   $("#infoForm").addEventListener("change", function (e) {
     var f = e.target.closest(".field");
     if (f && ["code", "code2", "email"].indexOf(f.getAttribute("data-field")) === -1) { f.classList.remove("invalid"); var er = $(".field-error", f); if (er) er.hidden = true; }
-    if (e.target.name === "is_ubu" && e.target.value === "ไม่ใช่") {
-      var sel = $("#f_faculty"); if (sel && !sel.value) { sel.value = "อื่น ๆ (ไม่ใช่นักศึกษา ม.อุบลฯ)"; S.info.faculty = sel.value; }
-    }
     if (e.target.id === "consentFinal") $("#consentFinalErr").hidden = true;
     if (e.target.id === "f_email") { var v = e.target.value.trim(); if (v && !emailOk(v)) fieldErr("email", "กรุณากรอกอีเมลให้ถูกต้อง"); }
-    if (e.target.name === "info_sources") {
-      // "ไม่เคยได้รับข้อมูล" เลือกร่วมกับข้ออื่นไม่ได้
-      var boxes = $$('input[name="info_sources"]');
-      if (e.target.value === D.infoSourceNone && e.target.checked) boxes.forEach(function (b) { if (b !== e.target) b.checked = false; });
-      else if (e.target.checked) boxes.forEach(function (b) { if (b.value === D.infoSourceNone) b.checked = false; });
-      S.info.info_sources = boxes.filter(function (b) { return b.checked; }).map(function (b) { return b.value; });
-      save(); return;
+    var fd = INFO_FIELDS.filter(function (x) { return x.name === e.target.name; })[0];
+    if (fd && fd.type === "multi") {
+      S.info[fd.name] = $$('input[name="' + fd.name + '"]').filter(function (b) { return b.checked; }).map(function (b) { return b.value; });
+    } else if (e.target.name && ["code", "code2", "email"].indexOf(e.target.name) === -1) {
+      S.info[e.target.name] = e.target.type === "checkbox" ? e.target.checked : e.target.value;
     }
-    if (e.target.name && ["code", "code2", "email"].indexOf(e.target.name) === -1) {
-      S.info[e.target.name] = e.target.type === "checkbox" ? e.target.checked : e.target.value; save();
+    if (fd && fd.other) {
+      var box = $('[data-other-for="' + fd.name + '"]'), show = hasOther(fd, S.info[fd.name]);
+      if (box.hidden && show) setTimeout(function () { $("input", box).focus(); }, 0);
+      box.hidden = !show;
     }
+    save();
   });
   function emailOk(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v); }
 
@@ -340,12 +361,22 @@
     e.preventDefault();
     var form = e.target, bad = null, data = {};
     INFO_FIELDS.forEach(function (f) {
-      var wrap = $('[data-field="' + f.name + '"]', form), v = "";
-      if (f.type === "select") v = form.elements[f.name].value;
+      var wrap = $('[data-field="' + f.name + '"]', form), v = "", msg = "";
+      if (f.type === "select" || f.type === "number") v = form.elements[f.name].value.trim();
       else if (f.type === "multi") { v = $$('input[name="' + f.name + '"]:checked', form).map(function (b) { return b.value; }); if (!v.length) v = ""; }
       else { var c = $('input[name="' + f.name + '"]:checked', form); v = c ? c.value : ""; }
-      if (!v) { wrap.classList.add("invalid"); $(".field-error", wrap).hidden = false; if (!bad) bad = wrap; }
+      if (f.type === "number") {
+        if (!v) msg = "กรุณากรอก" + f.label;
+        else if (!/^\d+$/.test(v) || Number(v) < f.min || Number(v) > f.max) msg = "กรุณากรอก" + f.label + "เป็นตัวเลขจำนวนเต็ม " + f.min + "–" + f.max + " " + f.unit;
+        else v = Number(v);
+      } else if (!v) msg = f.type === "multi" ? "กรุณาเลือกอย่างน้อย 1 ข้อ" : "กรุณาเลือกคำตอบ";
       data[f.name] = v;
+      if (f.other) {
+        var ot = hasOther(f, v) ? form.elements[f.name + "_other"].value.trim() : "";
+        if (hasOther(f, v) && !ot && !msg) msg = "กรุณาระบุ “" + f.other + "”";
+        data[f.name + "_other"] = ot;
+      }
+      if (msg) { fieldErr(f.name, msg); if (!bad) bad = wrap; }
     });
     var code = $("#f_code").value, code2 = $("#f_code2").value, email = $("#f_email").value.trim();
     if (!codeOk(code)) { fieldErr("code", "รหัสยังไม่ครบเงื่อนไขด้านบน"); if (!bad) bad = $('[data-field="code"]'); }
@@ -358,7 +389,7 @@
     var proceed = function () {
       data.consent_final = true;
       S.info = data; S.code = code.trim(); S.email = email;
-      go("pre");
+      go("hlpre");
     };
     if (!CFG.SCRIPT_URL) return proceed();
     btn.disabled = true; var old = btn.textContent; btn.textContent = "กำลังตรวจสอบรหัส…";
@@ -382,91 +413,58 @@
   /* ======================================================
      แบบประเมิน (ก่อน/หลัง)
      ====================================================== */
-  // คำถามคัดกรอง: ถ้าตอบ "ไม่มี" ข้อที่เกี่ยวกับเพศสัมพันธ์จะถูกซ่อนและบันทึกเป็น SKIP
-  var SKIP = "SKIP";
-  function screenNo(kind) { var sc = D[kind].screen; return !!sc && S[kind][sc.id] === sc.no; }
-  function visibleItems(kind) { return D[kind].items.filter(function (it) { return !(it.sex && screenNo(kind)); }); }
-  function applyScreen(kind) {
-    var sc = D[kind].screen; if (!sc) return;
-    var no = screenNo(kind);
-    D[kind].items.forEach(function (it) {
-      if (!it.sex) return;
-      if (no) S[kind][it.id] = SKIP;
-      else if (S[kind][it.id] === SKIP) delete S[kind][it.id];
-    });
-    save();
-  }
-
+  // ลำดับแบบประเมิน: ครั้งละ 2 ชุด (ความรอบรู้ → พฤติกรรม) ทุกข้อบังคับตอบ
+  var ASSESS_META = {
+    hlpre: { step: "ขั้นที่ 3 · ครั้งที่ 1 · ชุดที่ 1 จาก 2", btn: "บันทึกและไปชุดที่ 2" },
+    pre: { step: "ขั้นที่ 4 · ครั้งที่ 1 · ชุดที่ 2 จาก 2", btn: "บันทึกและไปอ่านเนื้อหา" },
+    hlpost: { step: "ขั้นที่ 2 · ครั้งที่ 2 · ชุดที่ 1 จาก 2", btn: "บันทึกและไปชุดที่ 2" },
+    post: { step: "ขั้นที่ 3 · ครั้งที่ 2 · ชุดที่ 2 จาก 2", btn: "บันทึกและดูผลของฉัน" }
+  };
+  function answered(v) { return v != null && v !== ""; }
   function renderAssess(kind) {
-    var set = D[kind], answers = S[kind], form = $("#" + kind + "Form"), sc = set.screen;
-    var step = kind === "pre" ? "ครั้งที่ 1" : "ครั้งที่ 2";
-    var html = '<p class="eyebrow">' + step + " · " + set.title + "</p><h2>" + set.title + "</h2>";
-    if (sc) {
-      html += '<fieldset class="q screen" data-q="' + sc.id + '"><legend><span class="qn">ก่อนเริ่ม</span>' + esc(sc.text) + "</legend>" +
-        '<div class="choices">' + chipGroup(sc.id, [sc.yes, sc.no], answers[sc.id] || "") + "</div>" +
-        '<p class="field-error" hidden>กรุณาตอบคำถามนี้ก่อน</p></fieldset>';
-    }
-    html += '<div class="q-body" data-body' + (sc && !answers[sc.id] ? " hidden" : "") + '>' +
-      '<p class="q-lead">' + set.lead + '</p><p class="muted">' + set.note + '</p><p class="skip-note" data-skipnote hidden>ข้อที่เกี่ยวกับการมีเพศสัมพันธ์ถูกข้ามให้แล้ว ตอบเฉพาะข้อที่เหลือ</p>';
+    var set = D[kind], answers = S[kind], form = $("#" + kind + "Form");
+    var html = '<p class="eyebrow">' + ASSESS_META[kind].step + "</p><h2>" + esc(set.title) + "</h2>" +
+      (set.subtitle ? '<p class="q-sub">' + esc(set.subtitle) + "</p>" : "") +
+      '<div class="q-guide"><p><strong>คำชี้แจง</strong> ' + esc(set.lead) + "</p>" +
+      (set.legend ? '<ul class="scale-legend">' + set.legend.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>" : "") + "</div>";
     set.items.forEach(function (it, i) {
-      html += '<fieldset class="q" data-q="' + it.id + '"' + (it.sex ? " data-sex" : "") + '><legend><span class="qn" data-qn>' + (i + 1) + ".</span>" + esc(it.text) + "</legend>" +
-        '<div class="choices scale">' + chipGroup(it.id, D.scale, answers[it.id] === SKIP ? "" : (answers[it.id] || "")) + "</div>" +
+      html += '<fieldset class="q" data-q="' + it.id + '"><legend><span class="qn">' + (i + 1) + ".</span>" + esc(it.text) + "</legend>" +
+        '<div class="choices scale">' + chipGroup(it.id, set.scale || D.scale, answers[it.id] || "") + "</div>" +
         '<p class="field-error" hidden>กรุณาเลือกคำตอบข้อนี้</p></fieldset>';
     });
-    html += '<p class="form-count" data-count></p></div><p class="field-error" data-submit-err hidden></p><div class="actions"><button class="btn btn-primary" type="submit">' +
-      (kind === "pre" ? "บันทึกและไปอ่านเนื้อหา" : "บันทึกและดูผลของฉัน") + "</button></div>";
+    html += '<p class="form-count" data-count></p><p class="field-error" data-submit-err hidden></p><div class="actions"><button class="btn btn-primary" type="submit">' +
+      ASSESS_META[kind].btn + "</button></div>";
     form.innerHTML = html;
-    refreshAssess(kind);
-  }
-  function refreshAssess(kind) {
-    var form = $("#" + kind + "Form"), sc = D[kind].screen, no = screenNo(kind);
-    var body = $("[data-body]", form); if (body) body.hidden = !!sc && !S[kind][sc.id];
-    var note = $("[data-skipnote]", form); if (note) note.hidden = !no;
-    var n = 0;
-    D[kind].items.forEach(function (it) {
-      var q = $('[data-q="' + it.id + '"]', form); if (!q) return;
-      var hide = it.sex && no;
-      q.hidden = hide;
-      if (!hide) { n++; $("[data-qn]", q).textContent = n + "."; }
-    });
     updateCount(kind);
   }
   function updateCount(kind) {
-    var items = visibleItems(kind);
-    var n = items.filter(function (it) { var v = S[kind][it.id]; return v != null && v !== "" && v !== SKIP; }).length;
+    var items = D[kind].items;
+    var n = items.filter(function (it) { return answered(S[kind][it.id]); }).length;
     var el = $("#" + kind + "Form [data-count]");
     if (el) el.textContent = "ตอบแล้ว " + n + " จาก " + items.length + " ข้อ";
   }
 
-  ["pre", "post"].forEach(function (kind) {
+  ASSESS.forEach(function (kind) {
     var form = $("#" + kind + "Form");
     form.addEventListener("change", function (e) {
       if (!e.target.name) return;
       S[kind][e.target.name] = e.target.value; save();
       var q = e.target.closest(".q"); if (q) { q.classList.remove("invalid"); $(".field-error", q).hidden = true; }
-      var sc = D[kind].screen;
-      if (sc && e.target.name === sc.id) { applyScreen(kind); refreshAssess(kind); }
-      else updateCount(kind);
+      updateCount(kind);
     });
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      var bad = null, sc = D[kind].screen;
-      if (sc && !S[kind][sc.id]) {
-        var sq = $('[data-q="' + sc.id + '"]', form);
-        sq.classList.add("invalid"); $(".field-error", sq).hidden = false;
-        return focusBad(sq);
-      }
-      applyScreen(kind);
-      visibleItems(kind).forEach(function (it) {
-        var v = S[kind][it.id];
-        if (v == null || v === "" || v === SKIP) {
-          var q = $('[data-q="' + it.id + '"]', form);
-          q.classList.add("invalid"); $(".field-error", q).hidden = false;
-          if (!bad) bad = q;
-        }
+      var bad = null;
+      D[kind].items.forEach(function (it) {
+        if (answered(S[kind][it.id])) return;
+        var q = $('[data-q="' + it.id + '"]', form);
+        q.classList.add("invalid"); $(".field-error", q).hidden = false;
+        if (!bad) bad = q;
       });
       if (bad) return focusBad(bad);
+      if (kind === "hlpre") { S.hlPreCompleted = true; save(); return go("pre"); }
       if (kind === "pre") { S.preCompleted = true; save(); return go("content"); }
+      if (kind === "hlpost") { S.hlPostCompleted = true; save(); return go("post"); }
       submitStage2(form);
     });
   });
@@ -474,27 +472,41 @@
   /* ======================================================
      คะแนน
      ====================================================== */
-  // คะแนนความเสี่ยง 0–4: ข้อป้องกัน = 4 − ความถี่, ข้อเสี่ยง = ความถี่ (คะแนนสูง = เสี่ยงมาก)
-  function itemScore(it, raw) {
-    if (raw === SKIP || raw === "NA" || raw == null || raw === "") return null;
+  // พฤติกรรม: คะแนนความเสี่ยง 0–4 ข้อป้องกัน = 4 − ความถี่, ข้อเสี่ยง = ความถี่ (คะแนนสูง = เสี่ยงมาก)
+  // ความรอบรู้: คะแนน 1–5 ข้อทางบวก = คำตอบ, ข้อทางลบ (rev) = 6 − คำตอบ (คะแนนสูง = รอบรู้มาก)
+  function itemScore(set, it, raw) {
+    if (raw == null || raw === "") return null;
     var v = Number(raw);
     if (isNaN(v)) return null;
+    if (set.hl) return it.rev ? set.scoreMax + 1 - v : v;
     return it.dir === "-" ? v : D.scoreMax - v;
   }
   function calc(kind) {
-    var scores = {}, sum = 0, n = 0;
-    D[kind].items.forEach(function (it) {
-      var s = itemScore(it, S[kind][it.id]);
+    var set = D[kind], scores = {}, sum = 0, n = 0;
+    set.items.forEach(function (it) {
+      var s = itemScore(set, it, S[kind][it.id]);
       scores[it.id] = s;
       if (s != null) { sum += s; n++; }
     });
     var mean = n ? Math.round((sum / n) * 100) / 100 : null;
-    return { scores: scores, mean: mean, n: n, total: sum, level: levelOf(mean) };
+    return { scores: scores, mean: mean, n: n, total: sum, level: levelOf(mean, set.levels) };
   }
-  function levelOf(mean) {
+  function levelOf(mean, levels) {
+    levels = levels || D.levels;
     if (mean == null) return null;
-    for (var i = 0; i < D.levels.length; i++) if (mean >= D.levels[i].min) return D.levels[i];
-    return D.levels[D.levels.length - 1];
+    for (var i = 0; i < levels.length; i++) if (mean >= levels[i].min) return levels[i];
+    return levels[levels.length - 1];
+  }
+  // ใส่คำตอบดิบ คะแนนรายข้อ และคะแนนสรุปของแบบประเมินหนึ่งชุดลงใน payload
+  // prefix: "pre" → pre_total … / "hl_pre" → hl_pre_total …
+  function addScores(p, kind, prefix) {
+    var set = D[kind], r = calc(kind);
+    set.items.forEach(function (it) { p[it.id + "_raw"] = S[kind][it.id]; });
+    set.items.forEach(function (it) { p[it.id + "_score"] = r.scores[it.id] == null ? "" : r.scores[it.id]; });
+    p[prefix + "_n_answered"] = r.n;
+    p[prefix + "_total"] = r.n ? r.total : "";
+    p[prefix + "_mean"] = r.mean == null ? "" : r.mean;
+    p[prefix + "_level"] = r.level ? r.level.label : "";
   }
 
   /* ======================================================
@@ -522,9 +534,10 @@
       btn.disabled = false; btn.textContent = unlocked() ? "ทำแบบประเมินหลังเรียน" : "ดูวันนัดของฉัน";
       hint.textContent = unlocked() ? "ครบ 7 วันแล้ว ทำแบบประเมินหลังเรียนได้เลย" : "อ่านทบทวนได้ระหว่างรอครบ 7 วัน";
     } else {
-      btn.disabled = !all; btn.textContent = "อ่านครบแล้ว บันทึกและรับวันนัด";
-      hint.textContent = all ? "อ่านครบแล้ว กดปุ่มด้านล่างเพื่อบันทึกและรับวันนัดทำแบบประเมินหลังเรียน" : "อ่านให้ครบทั้ง " + D.sections.length + " หัวข้อ แล้วกดปุ่มด้านล่างเพื่อบันทึกและรับวันนัดทำแบบประเมินหลังเรียน";
+      btn.disabled = !all; btn.textContent = "อ่านครบแล้ว ไปเนื้อหาความรอบรู้ 6 ด้าน";
+      hint.textContent = all ? "อ่านครบแล้ว กดปุ่มด้านล่างเพื่อไปศึกษาเนื้อหาและทำแบบฝึกทักษะความรอบรู้ด้านสุขภาพ 6 ด้าน" : "อ่านให้ครบทั้ง " + D.sections.length + " หัวข้อ แล้วกดปุ่มด้านล่างเพื่อไปเนื้อหาความรอบรู้ด้านสุขภาพ 6 ด้าน";
     }
+    $("#btnToSkills").hidden = !(S.preCompleted && (all || S.stage1Saved));
   }
 
   function showTopic(i, focus) {
@@ -584,31 +597,136 @@
     if (!S.preCompleted) return go(S.id ? nextStep() : "consent");
     if (S.stage1Saved) return go(nextStep());
     if (!allTopicsRead()) return toast("กรุณาอ่านเนื้อหาให้ครบทุกหัวข้อก่อน");
+    go("skills");
+  });
+  $("#btnToSkills").addEventListener("click", function () { go("skills"); });
+
+  /* ======================================================
+     เสริมสร้างความรอบรู้ด้านสุขภาพ 6 ด้าน + แบบฝึกทักษะ
+     ====================================================== */
+  function renderSkills() {
+    if (S.skillTopic >= D.hlDomains.length) S.skillTopic = 0;
+    $("#skillTabs").innerHTML = D.hlDomains.map(function (d, i) {
+      return '<button type="button" class="tab" role="tab" id="stab-' + d.id + '" aria-controls="skill" aria-selected="' + (i === S.skillTopic) + '" tabindex="' + (i === S.skillTopic ? 0 : -1) + '" data-i="' + i + '">' +
+        '<span aria-hidden="true">' + d.icon + "</span>ด้านที่ " + d.n + " " + esc(d.title) + (skillDone(d) ? '<span class="done" aria-label="ทำครบแล้ว">✓</span>' : "") + "</button>";
+    }).join("");
+    showSkill(S.skillTopic, false);
+  }
+
+  function quizCard(q, i) {
+    var ans = S.skillQuiz[q.id], answered = ans != null, letters = "ABCDEFGH";
+    var opts = q.options.map(function (o, j) {
+      var cls = "q-opt" + (answered && j === q.answer ? " is-right" : "") + (answered && j === ans && j !== q.answer ? " is-wrong" : "") + (answered && j === ans ? " is-picked" : "");
+      return '<li><button type="button" class="' + cls + '" data-q="' + q.id + '" data-o="' + j + '"' + (answered ? ' disabled aria-pressed="' + (j === ans) + '"' : "") + ">" +
+        '<span class="q-letter" aria-hidden="true">' + letters[j] + "</span><span>" + esc(o) + "</span></button></li>";
+    }).join("");
+    var fb = answered ? '<div class="q-feedback ' + (ans === q.answer ? "ok" : "no") + '" role="status"><strong>' + (ans === q.answer ? "✓ ถูกต้อง!" : "ยังไม่ใช่") + " · เฉลย: ข้อ " + letters[q.answer] + "</strong><p>" + esc(q.explain) + "</p></div>" : "";
+    return '<div class="q-card"><div class="q-head"><span class="q-num">ข้อ ' + (i + 1) + "</span><h5>" + esc(q.title) + "</h5></div>" +
+      (q.quote ? '<div class="q-post" aria-hidden="true">' + esc(q.quote) + "</div>" : "") +
+      '<p class="q-label">สถานการณ์จำลอง</p><p>' + esc(q.scenario) + "</p>" +
+      '<p class="q-label">คำถาม</p><p class="q-text">' + esc(q.q) + "</p>" +
+      '<ol class="q-opts">' + opts + "</ol>" + fb + "</div>";
+  }
+
+  function showSkill(i, focus) {
+    var d = D.hlDomains[i];
+    S.skillTopic = i;
+    if (S.skillRead.indexOf(d.id) === -1) S.skillRead.push(d.id);
+    save();
+    $$("#skillTabs .tab").forEach(function (t, j) { t.setAttribute("aria-selected", j === i); t.tabIndex = j === i ? 0 : -1; });
+    var prev = i > 0 ? '<button type="button" class="btn btn-ghost" data-skill="' + (i - 1) + '">← ด้านที่ ' + D.hlDomains[i - 1].n + "</button>" : "<span></span>";
+    var next = i < D.hlDomains.length - 1 ? '<button type="button" class="btn btn-primary" data-skill="' + (i + 1) + '">ด้านที่ ' + D.hlDomains[i + 1].n + " " + esc(D.hlDomains[i + 1].title) + " →</button>" : "";
+    var el = $("#skill");
+    el.className = "card topic skill theme-" + d.theme;
+    el.setAttribute("aria-labelledby", "stab-" + d.id);
+    el.innerHTML =
+      '<div class="skill-hero"><p class="skill-n">ด้านที่ ' + d.n + " จาก " + D.hlDomains.length + " · " + esc(d.en) + "</p>" +
+      '<h3><span aria-hidden="true">' + d.icon + "</span>" + esc(d.title) + "</h3>" +
+      '<div class="skill-goal"><strong>🎯 เป้าหมาย</strong><p>' + esc(d.goal) + "</p></div></div>" +
+      d.html +
+      '<div class="q-section"><h4 class="q-title">สถานการณ์จำลอง + แบบฝึกทักษะ</h4><p class="muted">อ่านสถานการณ์ แล้วเลือกคำตอบที่ถูกต้องที่สุด (ตอบได้ครั้งเดียว ระบบจะแสดงเฉลยทันที)</p>' +
+      '<div class="q-grid">' + d.quiz.map(quizCard).join("") + "</div></div>" +
+      '<div class="remember"><strong>💡 จำไว้เสมอ!</strong><ul>' + d.remember.map(function (r) { return "<li>" + esc(r) + "</li>"; }).join("") + "</ul></div>" +
+      '<div class="topic-nav">' + prev + next + "</div>";
+    updateSkillsFoot();
+    if (focus) {
+      var tab = $("#stab-" + d.id); if (tab) tab.scrollIntoView({ block: "nearest", inline: "center" });
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  function updateSkillsFoot() {
+    var n = D.hlDomains.filter(skillDone).length, total = D.hlDomains.length, btn = $("#btnSkillsDone"), hint = $("#skillsHint");
+    $("#skillCount").textContent = "ทำครบแล้ว " + n + " / " + total + " ด้าน";
+    $$("#skillTabs .tab").forEach(function (t, j) {
+      if (skillDone(D.hlDomains[j]) && !$(".done", t)) t.insertAdjacentHTML("beforeend", '<span class="done" aria-label="ทำครบแล้ว">✓</span>');
+    });
+    if (S.postSaved) { btn.disabled = false; btn.textContent = "ดูผลของฉัน"; hint.textContent = "ท่านทำครบทั้ง 2 ครั้งแล้ว ทบทวนได้ตลอด"; }
+    else if (S.stage1Saved) {
+      btn.disabled = false; btn.textContent = unlocked() ? "ทำแบบประเมินหลังเรียน" : "ดูวันนัดของฉัน";
+      hint.textContent = unlocked() ? "ครบ 7 วันแล้ว ทำแบบประเมินหลังเรียนได้เลย" : "ทบทวนได้ระหว่างรอครบ 7 วัน";
+    } else {
+      btn.disabled = n < total; btn.textContent = "ทำครบแล้ว บันทึกและรับวันนัด";
+      hint.textContent = n < total ? "ศึกษาเนื้อหาและทำแบบฝึกทักษะให้ครบทั้ง " + total + " ด้าน แล้วกดปุ่มด้านล่างเพื่อบันทึกและรับวันนัดทำแบบประเมินหลังเรียน" : "ทำครบทั้ง " + total + " ด้านแล้ว กดปุ่มด้านล่างเพื่อบันทึกและรับวันนัดทำแบบประเมินหลังเรียน";
+    }
+  }
+
+  $("#skillTabs").addEventListener("click", function (e) { var t = e.target.closest(".tab"); if (t) showSkill(Number(t.getAttribute("data-i")), true); });
+  $("#skillTabs").addEventListener("keydown", function (e) {
+    if (["ArrowRight", "ArrowLeft", "Home", "End"].indexOf(e.key) === -1) return;
+    e.preventDefault();
+    var n = D.hlDomains.length, i = S.skillTopic;
+    if (e.key === "ArrowRight") i = (i + 1) % n;
+    if (e.key === "ArrowLeft") i = (i - 1 + n) % n;
+    if (e.key === "Home") i = 0;
+    if (e.key === "End") i = n - 1;
+    showSkill(i, false); $("#stab-" + D.hlDomains[i].id).focus();
+  });
+  $("#skill").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-skill]"); if (b) return showSkill(Number(b.getAttribute("data-skill")), true);
+    var o = e.target.closest("[data-o]");
+    if (!o || o.disabled) return;
+    var qid = o.getAttribute("data-q");
+    if (S.skillQuiz[qid] != null) return;
+    S.skillQuiz[qid] = Number(o.getAttribute("data-o")); save();
+    var card = o.closest(".q-card"), d = D.hlDomains[S.skillTopic];
+    var qi = d.quiz.map(function (q) { return q.id; }).indexOf(qid);
+    card.outerHTML = quizCard(d.quiz[qi], qi);
+    updateSkillsFoot();
+  });
+
+  $("#btnSkillsDone").addEventListener("click", function () {
+    if (!S.preCompleted) return go(nextStep());
+    if (S.stage1Saved) return go(nextStep());
+    if (!allSkillsDone()) return toast("กรุณาทำแบบฝึกทักษะให้ครบทั้ง 6 ด้านก่อน");
     submitStage1(this);
   });
 
   /* ---------------- บันทึกครั้งที่ 1 ---------------- */
   function stage1Payload() {
-    var pre = calc("pre"), p = { action: "stage1", code: S.code, email: S.email };
+    var p = { action: "stage1", code: S.code, email: S.email };
     p.response_id = S.id;
     p.started_at = S.startedAt;
     p.content_read_at_client = new Date().toISOString();
-    p.is_ubu_student = S.info.is_ubu;
-    p.flag_non_ubu = S.info.is_ubu === "ไม่ใช่" ? "NON-UBU" : "";
-    p.gender = S.info.gender; p.year = S.info.year; p.faculty = S.info.faculty;
-    var srcs = S.info.info_sources || [];
-    p.info_sources = srcs.join("; ");
-    D.infoSources.concat([D.infoSourceNone]).forEach(function (o, i) { p["src" + (i + 1)] = srcs.indexOf(o) > -1 ? 1 : 0; });
-    p.ever_sex = S.info.ever_sex;
+    // ข้อมูลส่วนบุคคล: 1 คอลัมน์ต่อฟิลด์ + <name>_other สำหรับ "อื่น ๆ ระบุ"
+    INFO_FIELDS.forEach(function (f) {
+      var v = S.info[f.name];
+      if (f.type === "multi") {
+        v = Array.isArray(v) ? v : [];
+        p[f.name] = v.join("; ");
+        f.options.forEach(function (o, i) { p["src" + (i + 1)] = v.indexOf(o) > -1 ? 1 : 0; }); // src1 … = 1/0 รายตัวเลือก
+      } else p[f.name] = v == null ? "" : v;
+      if (f.other) p[f.name + "_other"] = S.info[f.name + "_other"] || "";
+    });
     p.consent = "ยินยอม";
-    p.pre_sex = S.pre[D.pre.screen.id] || "";
-    D.pre.items.forEach(function (it) { p[it.id + "_raw"] = S.pre[it.id]; });
-    D.pre.items.forEach(function (it) { p[it.id + "_score"] = pre.scores[it.id] == null ? "" : pre.scores[it.id]; });
-    p.pre_n_answered = pre.n;
-    p.pre_total = pre.n ? pre.total : "";
-    p.pre_mean = pre.mean == null ? "" : pre.mean;
-    p.pre_level = pre.level ? pre.level.label : "";
+    addScores(p, "hlpre", "hl_pre"); // ชุดที่ 1 ความรอบรู้ (คอลัมน์ hl_pre…)
+    addScores(p, "pre", "pre"); // ชุดที่ 2 พฤติกรรม (คอลัมน์ pre…)
     p.content_topics_read = S.read.length;
+    // แบบฝึกทักษะความรอบรู้ 6 ด้าน (ฝึกทำ ไม่ใช่แบบประเมิน): จำนวนด้านที่ทำครบ และจำนวนข้อที่ตอบถูกครั้งแรก
+    var qs = [].concat.apply([], D.hlDomains.map(function (d) { return d.quiz; }));
+    p.skills_domains_done = D.hlDomains.filter(skillDone).length;
+    p.skills_quiz_correct = qs.filter(function (q) { return S.skillQuiz[q.id] === q.answer; }).length;
+    p.skills_quiz_total = qs.length;
     return p;
   }
   function submitStage1(btn) {
@@ -643,9 +761,9 @@
       }
       var left = t - Date.now();
       if (left <= 0) {
-        card.innerHTML = '<p class="eyebrow">ครั้งที่ 2</p><h2>ครบ 7 วันแล้ว</h2><p>ตอนนี้ท่านทำแบบประเมินพฤติกรรมหลังเรียนได้แล้ว ใช้เวลาประมาณ ' + esc(CFG.DURATION_POST_MIN || "5") + ' นาที</p>' +
+        card.innerHTML = '<p class="eyebrow">ครั้งที่ 2</p><h2>ครบ 7 วันแล้ว</h2><p>ตอนนี้ท่านทำแบบประเมินหลังเข้าร่วมโปรแกรมได้แล้ว 2 ชุด คือ แบบประเมินความรอบรู้ด้านสุขภาพ ' + D.hlpost.items.length + ' ข้อ และแบบประเมินพฤติกรรม ' + D.post.items.length + ' ข้อ ใช้เวลาประมาณ ' + esc(CFG.DURATION_POST_MIN || "15") + ' นาที</p>' +
           '<div class="actions"><button class="btn btn-ghost" type="button" data-nav="content">อ่านเนื้อหาอีกครั้ง</button><button class="btn btn-primary" type="button" id="btnGoPost">ทำแบบประเมินหลังเรียน</button></div>';
-        $("#btnGoPost").addEventListener("click", function () { go("post"); });
+        $("#btnGoPost").addEventListener("click", function () { go("hlpost"); });
         clearInterval(waitTimer);
         return;
       }
@@ -688,14 +806,20 @@
     api({ action: "resume", code: code.trim() }).then(function (j) {
       var r = j.row; reset();
       S.id = r.response_id; S.startedAt = r.started_at; S.code = code.trim();
-      S.info = { is_ubu: r.is_ubu_student, gender: r.gender, year: r.year, faculty: r.faculty, info_sources: String(r.info_sources || "").split("; ").filter(Boolean), ever_sex: r.ever_sex, consent_final: true };
-      S.pre[D.pre.screen.id] = r.pre_sex || "";
-      D.pre.items.forEach(function (it) { S.pre[it.id] = String(r[it.id + "_raw"]); });
+      S.info = { consent_final: true };
+      INFO_FIELDS.forEach(function (f) {
+        var v = r[f.name] == null ? "" : r[f.name];
+        S.info[f.name] = f.type === "multi" ? String(v).split("; ").filter(Boolean) : v;
+        if (f.other) S.info[f.name + "_other"] = r[f.name + "_other"] || "";
+      });
+      var restore = function (kind) { D[kind].items.forEach(function (it) { var v = r[it.id + "_raw"]; S[kind][it.id] = v == null ? "" : String(v); }); };
+      restore("hlpre"); S.hlPreCompleted = true;
+      restore("pre");
       S.preCompleted = true; S.read = D.sections.map(function (s) { return s.id; });
       S.stage1Saved = true; S.unlockAt = j.unlock_at;
       if (r.status === "ทำครบ") {
-        S.post[D.post.screen.id] = r.post_sex || "";
-        D.post.items.forEach(function (it) { S.post[it.id] = String(r[it.id + "_raw"]); });
+        restore("hlpost"); S.hlPostCompleted = true;
+        restore("post");
         S.postSaved = true; S.satSaved = !!r.satisfaction_at;
         S.thankIdx = Math.floor(Math.random() * D.thanks.length);
       }
@@ -708,18 +832,19 @@
      ====================================================== */
   function submitStage2(form) {
     var btn = $('button[type="submit"]', form), errEl = $("[data-submit-err]", form), old = btn.textContent;
-    var pre = calc("pre"), post = calc("post");
-    var diff = pre.mean != null && post.mean != null ? Math.round((post.mean - pre.mean) * 100) / 100 : "";
+    var change = function (a, b) {
+      var d = a.mean != null && b.mean != null ? Math.round((b.mean - a.mean) * 100) / 100 : "";
+      return { diff: d, pct: d !== "" && a.mean ? Math.round(d / a.mean * 1000) / 10 : "" };
+    };
     var p = { action: "stage2", code: S.code, response_id: S.id, post_submitted_at_client: new Date().toISOString() };
-    p.post_sex = S.post[D.post.screen.id] || "";
-    D.post.items.forEach(function (it) { p[it.id + "_raw"] = S.post[it.id]; });
-    D.post.items.forEach(function (it) { p[it.id + "_score"] = post.scores[it.id] == null ? "" : post.scores[it.id]; });
-    p.post_n_answered = post.n;
-    p.post_total = post.n ? post.total : "";
-    p.post_mean = post.mean == null ? "" : post.mean;
-    p.post_level = post.level ? post.level.label : "";
-    p.score_diff = diff;
-    p.pct_change = diff !== "" && pre.mean ? Math.round(diff / pre.mean * 1000) / 10 : "";
+    addScores(p, "hlpost", "hl_post");
+    var hl = change(calc("hlpre"), calc("hlpost"));
+    p.hl_score_diff = hl.diff;
+    p.hl_pct_change = hl.pct;
+    addScores(p, "post", "post");
+    var bh = change(calc("pre"), calc("post"));
+    p.score_diff = bh.diff;
+    p.pct_change = bh.pct;
     var done = function () {
       S.postSaved = true; S.finishedAt = new Date().toISOString();
       if (S.thankIdx == null) S.thankIdx = Math.floor(Math.random() * D.thanks.length);
@@ -741,18 +866,38 @@
      ====================================================== */
   function renderSummary() {
     var pre = calc("pre"), post = calc("post"), max = D.scoreMax;
-    function scoreBox(label, r, cls) {
+    var hlPre = calc("hlpre"), hlPost = calc("hlpost"), hlMax = D.hlpre.scoreMax;
+    function scoreBox(label, r, cls, mx) {
+      mx = mx || max;
       var badge = r.level ? '<span class="badge ' + r.level.key + '">' + r.level.label + "</span>" : '<span class="badge">ไม่มีข้อมูล</span>';
-      return '<div class="score ' + cls + '"><div class="s-label">' + label + '</div><div class="s-num">' + (r.mean == null ? "—" : r.mean.toFixed(2)) + " <small>/ " + max + "</small></div>" + badge +
-        '<div class="s-sub">' + (r.n ? "คะแนนรวม " + r.total + " จาก " + (r.n * max) + " (" + r.n + " ข้อ)" : "") + "</div></div>";
+      return '<div class="score ' + cls + '"><div class="s-label">' + label + '</div><div class="s-num">' + (r.mean == null ? "—" : r.mean.toFixed(2)) + " <small>/ " + mx + "</small></div>" + badge +
+        '<div class="s-sub">' + (r.n ? "คะแนนรวม " + r.total + " จาก " + (r.n * mx) + " (" + r.n + " ข้อ)" : "") + "</div></div>";
     }
-    function bar(label, r, cls) {
-      var w = r.mean == null ? 0 : (r.mean / max) * 100;
+    function bar(label, r, cls, mx) {
+      mx = mx || max;
+      var w = r.mean == null ? 0 : (r.mean / mx) * 100;
       return '<div class="bar-row"><span>' + label + '</span><div class="bar-track"><div class="bar-fill ' + cls + '" style="width:' + Math.max(w, 2) + '%"></div></div><span>' + (r.mean == null ? "—" : r.mean.toFixed(2)) + "</span></div>";
     }
-    var notes = [];
-    if (screenNo("pre")) notes.push("ก่อนเรียน: ท่านไม่ได้มีเพศสัมพันธ์ในช่วง 3 เดือนที่ผ่านมา คะแนนคิดจาก " + pre.n + " ข้อที่ไม่เกี่ยวกับเพศสัมพันธ์");
-    if (screenNo("post")) notes.push("หลังเรียน: ท่านไม่ได้มีเพศสัมพันธ์ในช่วง 1 สัปดาห์ที่ผ่านมา คะแนนคิดจาก " + post.n + " ข้อที่ไม่เกี่ยวกับเพศสัมพันธ์");
+    // ความรอบรู้: คะแนนเพิ่มขึ้น = ดีขึ้น
+    var hlChange = "";
+    if (hlPre.mean != null && hlPost.mean != null) {
+      var hd = Math.round((hlPost.mean - hlPre.mean) * 100) / 100;
+      hlChange = '<p class="change ' + (hd > 0 ? "good" : hd < 0 ? "bad" : "") + '">' +
+        (hd > 0 ? "▲ คะแนนความรอบรู้เพิ่มขึ้น " + hd.toFixed(2) + " คะแนน" : hd < 0 ? "▼ คะแนนความรอบรู้ลดลง " + Math.abs(hd).toFixed(2) + " คะแนน" : "● คะแนนความรอบรู้เท่าเดิม") + "</p>";
+    }
+    var hlMain = hlPost.level || hlPre.level;
+    var hlLevels = D.hlpre.levels.slice().reverse();
+    var hlCriteria = hlLevels.map(function (l, i) {
+      var hi = i < hlLevels.length - 1 ? (hlLevels[i + 1].min - 0.01).toFixed(2) : hlMax.toFixed(2);
+      return Math.max(l.min, 1).toFixed(2) + "–" + hi + " " + l.label.replace("ความรอบรู้", "");
+    }).join(" · ");
+    var hlHtml =
+      '<h3 class="sum-h">1. ความรอบรู้ด้านสุขภาพเกี่ยวกับโรคซิฟิลิส</h3>' +
+      '<p class="muted">คะแนนเฉลี่ย 1–' + hlMax + ' <strong>คะแนนยิ่งสูง ยิ่งมีความรอบรู้มาก</strong></p>' +
+      '<div class="score-grid">' + scoreBox("ก่อนเข้าร่วมโปรแกรม", hlPre, "before", hlMax) + scoreBox("หลังเข้าร่วมโปรแกรม", hlPost, "after", hlMax) + "</div>" +
+      '<div class="bars">' + bar("ก่อน", hlPre, "before", hlMax) + bar("หลัง", hlPost, "after", hlMax) + "</div>" + hlChange +
+      (hlMain ? '<div class="advice ' + hlMain.key + '"><h4>' + hlMain.label + "</h4><p>" + esc(hlMain.message) + "</p></div>" : "") +
+      '<p class="muted small">เกณฑ์: ' + hlCriteria + "</p>";
     var change = "";
     if (pre.mean != null && post.mean != null) {
       var d = Math.round((post.mean - pre.mean) * 100) / 100;
@@ -761,16 +906,16 @@
     }
     var main = post.level || pre.level;
     $("#summaryCard").innerHTML =
-      '<p class="eyebrow">สรุปผล</p><h2>ผลการประเมินพฤติกรรมเสี่ยงของคุณ</h2>' +
+      '<p class="eyebrow">ขั้นที่ 4 · ครั้งที่ 2 · สรุปผล</p><h2>ผลการประเมินของคุณ</h2>' + hlHtml +
+      '<h3 class="sum-h">2. พฤติกรรมการป้องกันความเสี่ยงการเกิดโรคซิฟิลิส</h3>' +
       '<p class="muted">คะแนนเฉลี่ย 0–' + max + ' <strong>คะแนนยิ่งสูง ยิ่งมีความเสี่ยงต่อการติดเชื้อซิฟิลิสมาก</strong></p>' +
-      '<div class="score-grid">' + scoreBox("ก่อนเรียน (3 เดือนที่ผ่านมา)", pre, "before") + scoreBox("หลังเรียน (1 สัปดาห์ที่ผ่านมา)", post, "after") + "</div>" +
-      notes.map(function (n) { return '<p class="note-temp">' + n + "</p>"; }).join("") +
-      '<div class="bars">' + bar("ก่อนเรียน", pre, "before") + bar("หลังเรียน", post, "after") + "</div>" + change +
+      '<div class="score-grid">' + scoreBox("ก่อนเข้าร่วมโปรแกรม", pre, "before") + scoreBox("หลังเข้าร่วมโปรแกรม", post, "after") + "</div>" +
+      '<div class="bars">' + bar("ก่อน", pre, "before") + bar("หลัง", post, "after") + "</div>" + change +
       (main ? '<div class="advice ' + main.key + '"><h4>' + main.label + "</h4><p>" + esc(main.message) + '</p><p class="tips-h">คำแนะนำ</p><ul>' +
         main.tips.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul></div>" : "") +
       '<p class="disclaimer">' + esc(D.disclaimer) + "</p>" +
       '<p class="muted small">เกณฑ์: 0.00–1.33 ความเสี่ยงต่ำ · 1.34–2.67 ความเสี่ยงปานกลาง · 2.68–4.00 ความเสี่ยงสูง</p>' +
-      '<div class="save-status ok">✓ บันทึกคำตอบทั้ง 2 ครั้งเรียบร้อยแล้ว</div>' +
+      '<div class="save-status ok">✓ บันทึกคำตอบทั้ง 2 ครั้ง (ครั้งละ 2 ชุด) เรียบร้อยแล้ว</div>' +
       '<div class="actions"><button class="btn btn-ghost" type="button" data-nav="content">ทบทวนเนื้อหา</button><button class="btn btn-primary" type="button" id="btnToThanks">ไปต่อ</button></div>';
     $("#btnToThanks").addEventListener("click", function () { go("thanks"); });
   }
@@ -854,9 +999,9 @@
 
   function renderView(v) {
     if (v === "info") renderInfo();
-    if (v === "pre") renderAssess("pre");
-    if (v === "post") renderAssess("post");
+    if (ASSESS.indexOf(v) > -1) renderAssess(v);
     if (v === "content") renderContent();
+    if (v === "skills") renderSkills();
     if (v === "wait") renderWait();
     if (v === "summary") renderSummary();
     if (v === "thanks") renderThanks();
