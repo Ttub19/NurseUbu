@@ -6,7 +6,7 @@
   var STEPS = ["home", "consent", "info", "hlpre", "pre", "content", "skills", "wait", "hlpost", "post", "summary", "thanks", "ack"];
   var ASSESS = ["hlpre", "pre", "hlpost", "post"];
   var STORE_KEY = "sexed_state_v4";
-  var LOCK = CFG.LOCK_POST !== false; // false = ปิดล็อก 7 วัน ทำแบบประเมินหลังเรียนได้ทันที
+  var LOCK = CFG.LOCK_POST === true; // ค่าเริ่มต้น = ปิดล็อก ทำแบบประเมินหลังเรียนได้ทันที
   var WAIT_DAYS = Number(CFG.WAIT_DAYS) > 0 ? Number(CFG.WAIT_DAYS) : 7;
   var WAIT_MS = LOCK ? WAIT_DAYS * 864e5 : 0;
   var $ = function (s, r) { return (r || document).querySelector(s); };
@@ -783,13 +783,9 @@
         clearInterval(waitTimer);
         return;
       }
-      var d = Math.floor(left / 864e5), h = Math.floor(left % 864e5 / 36e5), m = Math.max(0, Math.ceil(left % 36e5 / 6e4));
-      if (m === 60) { m = 0; h++; }
       card.innerHTML =
         '<p class="eyebrow">บันทึกครั้งที่ 1 เรียบร้อย</p><h2>กลับมาทำแบบประเมินหลังเรียนอีกครั้ง</h2>' +
         '<p class="muted">ทำได้ตั้งแต่</p><p class="unlock-date">' + fmtLong(S.unlockAt) + "</p>" +
-        '<div class="countdown" role="timer" aria-label="เหลือเวลาอีก ' + d + " วัน " + h + " ชั่วโมง " + m + ' นาที">' +
-          "<div><strong>" + d + "</strong><span>วัน</span></div><div><strong>" + h + "</strong><span>ชั่วโมง</span></div><div><strong>" + m + "</strong><span>นาที</span></div></div>" +
         '<div class="code-remind"><div><span>รหัสส่วนตัวของท่าน</span><strong id="myCode" data-shown="0">••••••</strong></div><button type="button" class="btn btn-ghost btn-sm" id="btnShowCode">แสดงรหัส</button></div>' +
         '<ul class="wait-notes"><li>📧 ระบบจะส่งอีเมลเตือนเมื่อครบ 7 วัน (เช็กในกล่องจดหมายขยะด้วย)</li>' +
         "<li>🔑 กรุณาจดหรือแคปหน้าจอรหัสส่วนตัวเก็บไว้ ใช้กลับมาทำได้จากทุกเครื่อง</li>" +
