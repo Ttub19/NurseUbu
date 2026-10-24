@@ -609,47 +609,77 @@
   function renderSkills() {
     if (S.skillTopic >= D.hlDomains.length) S.skillTopic = 0;
     $("#skillTabs").innerHTML = D.hlDomains.map(function (d, i) {
-      return '<button type="button" class="tab" role="tab" id="stab-' + d.id + '" aria-controls="skill" aria-selected="' + (i === S.skillTopic) + '" tabindex="' + (i === S.skillTopic ? 0 : -1) + '" data-i="' + i + '">' +
-        '<span aria-hidden="true">' + d.icon + "</span>ด้านที่ " + d.n + " " + esc(d.title) + (skillDone(d) ? '<span class="done" aria-label="ทำครบแล้ว">✓</span>' : "") + "</button>";
+      return '<button type="button" class="sk-step" role="tab" id="stab-' + d.id + '" aria-controls="skill" aria-selected="' + (i === S.skillTopic) + '" tabindex="' + (i === S.skillTopic ? 0 : -1) + '" data-i="' + i + '">' +
+        '<span class="sk-dot" aria-hidden="true">' + (skillDone(d) ? "✓" : d.n) + '</span><span class="sk-step-t">' + esc(d.short) + "</span></button>";
     }).join("");
     showSkill(S.skillTopic, false);
   }
 
-  function quizCard(q, i) {
+  function quizCard(q, i, total) {
     var ans = S.skillQuiz[q.id], answered = ans != null, letters = "ABCDEFGH";
     var opts = q.options.map(function (o, j) {
-      var cls = "q-opt" + (answered && j === q.answer ? " is-right" : "") + (answered && j === ans && j !== q.answer ? " is-wrong" : "") + (answered && j === ans ? " is-picked" : "");
+      var cls = "q-opt" + (answered && j === q.answer ? " is-right" : "") + (answered && j === ans && j !== q.answer ? " is-wrong" : "");
       return '<li><button type="button" class="' + cls + '" data-q="' + q.id + '" data-o="' + j + '"' + (answered ? ' disabled aria-pressed="' + (j === ans) + '"' : "") + ">" +
-        '<span class="q-letter" aria-hidden="true">' + letters[j] + "</span><span>" + esc(o) + "</span></button></li>";
+        '<span class="q-letter" aria-hidden="true">' + (answered && j === q.answer ? "✓" : answered && j === ans ? "✕" : letters[j]) + "</span><span>" + esc(o) + "</span></button></li>";
     }).join("");
-    var fb = answered ? '<div class="q-feedback ' + (ans === q.answer ? "ok" : "no") + '" role="status"><strong>' + (ans === q.answer ? "✓ ถูกต้อง!" : "ยังไม่ใช่") + " · เฉลย: ข้อ " + letters[q.answer] + "</strong><p>" + esc(q.explain) + "</p></div>" : "";
-    return '<div class="q-card"><div class="q-head"><span class="q-num">ข้อ ' + (i + 1) + "</span><h5>" + esc(q.title) + "</h5></div>" +
-      (q.quote ? '<div class="q-post" aria-hidden="true">' + esc(q.quote) + "</div>" : "") +
-      '<p class="q-label">สถานการณ์จำลอง</p><p>' + esc(q.scenario) + "</p>" +
-      '<p class="q-label">คำถาม</p><p class="q-text">' + esc(q.q) + "</p>" +
+    var fb = answered ? '<div class="q-feedback ' + (ans === q.answer ? "ok" : "no") + '" role="status" tabindex="-1"><strong>' + (ans === q.answer ? "✓ ถูกต้อง!" : "ยังไม่ใช่ · คำตอบที่ถูกคือข้อ " + letters[q.answer]) + "</strong><p>" + esc(q.explain) + "</p></div>" : "";
+    return '<div class="q-card" id="qc-' + q.id + '">' +
+      '<p class="q-kicker">สถานการณ์ที่ ' + (i + 1) + " จาก " + total + "</p><h5>" + esc(q.title) + "</h5>" +
+      '<p class="q-scn">' + esc(q.scenario) + "</p>" +
+      '<p class="q-text">' + esc(q.q) + "</p>" +
       '<ol class="q-opts">' + opts + "</ol>" + fb + "</div>";
   }
 
-  function showSkill(i, focus) {
-    var d = D.hlDomains[i];
-    S.skillTopic = i;
+  function answeredCount(d) { return d.quiz.filter(function (q) { return S.skillQuiz[q.id] != null; }).length; }
+  function firstOpenQ(d) { for (var k = 0; k < d.quiz.length; k++) if (S.skillQuiz[d.quiz[k].id] == null) return k; return 0; }
+
+  // แต่ละด้านแบ่ง 2 ช่วง: "read" อ่านเนื้อหา → "quiz" ตัวอย่างสถานการณ์ทีละข้อ
+  function showSkill(i, focus, phase, qi) {
+    var d = D.hlDomains[i], last = D.hlDomains.length - 1;
+    if (i !== S.skillTopic || phase == null) {
+      if (phase == null) phase = d.html ? "read" : "quiz";
+      if (qi == null) qi = firstOpenQ(d);
+    }
+    if (!d.html) phase = "quiz";
+    S.skillTopic = i; S.skillPhase = phase; S.skillQi = qi == null ? (S.skillQi || 0) : qi;
+    if (S.skillQi >= d.quiz.length) S.skillQi = 0;
     if (S.skillRead.indexOf(d.id) === -1) S.skillRead.push(d.id);
     save();
-    $$("#skillTabs .tab").forEach(function (t, j) { t.setAttribute("aria-selected", j === i); t.tabIndex = j === i ? 0 : -1; });
-    var prev = i > 0 ? '<button type="button" class="btn btn-ghost" data-skill="' + (i - 1) + '">← ด้านที่ ' + D.hlDomains[i - 1].n + "</button>" : "<span></span>";
-    var next = i < D.hlDomains.length - 1 ? '<button type="button" class="btn btn-primary" data-skill="' + (i + 1) + '">ด้านที่ ' + D.hlDomains[i + 1].n + " " + esc(D.hlDomains[i + 1].title) + " →</button>" : "";
+    $$("#skillTabs .sk-step").forEach(function (t, j) { t.setAttribute("aria-selected", j === i); t.tabIndex = j === i ? 0 : -1; });
+
+    var nAns = answeredCount(d);
+    var tabs = '<div class="sk-phase" role="group" aria-label="ช่วงของด้านนี้">' +
+      (d.html ? '<button type="button" data-phase="read" aria-pressed="' + (phase === "read") + '"><span>1</span>อ่านเนื้อหา</button>' : "") +
+      '<button type="button" data-phase="quiz" aria-pressed="' + (phase === "quiz") + '"><span>' + (d.html ? 2 : 1) + "</span>ตัวอย่างสถานการณ์ <small>" + nAns + "/" + d.quiz.length + "</small></button></div>";
+
+    var body, actions;
+    if (phase === "read") {
+      body = '<div class="sk-body">' + d.html + "</div>";
+      actions = (i > 0 ? '<button type="button" class="btn btn-ghost" data-skill="' + (i - 1) + '">← ด้านที่ ' + D.hlDomains[i - 1].n + "</button>" : "<span></span>") +
+        '<button type="button" class="btn btn-primary" data-phase="quiz">อ่านแล้ว ไปตัวอย่างสถานการณ์ →</button>';
+    } else {
+      var q = d.quiz[S.skillQi], answered = S.skillQuiz[q.id] != null;
+      var dots = '<div class="q-dots" aria-hidden="true">' + d.quiz.map(function (qq, k) {
+        return '<span class="' + (k === S.skillQi ? "cur " : "") + (S.skillQuiz[qq.id] != null ? "done" : "") + '"></span>';
+      }).join("") + "</div>";
+      body = dots + quizCard(q, S.skillQi, d.quiz.length);
+      var back = S.skillQi > 0 ? '<button type="button" class="btn btn-ghost" data-qi="' + (S.skillQi - 1) + '">← ข้อก่อนหน้า</button>'
+        : d.html ? '<button type="button" class="btn btn-ghost" data-phase="read">← กลับไปอ่านเนื้อหา</button>'
+        : i > 0 ? '<button type="button" class="btn btn-ghost" data-skill="' + (i - 1) + '">← ด้านที่ ' + D.hlDomains[i - 1].n + "</button>" : "<span></span>";
+      var fwd;
+      if (!answered) fwd = '<button type="button" class="btn btn-primary" disabled>เลือกคำตอบก่อน</button>';
+      else if (S.skillQi < d.quiz.length - 1) fwd = '<button type="button" class="btn btn-primary" data-qi="' + (S.skillQi + 1) + '">ข้อถัดไป →</button>';
+      else if (i < last) fwd = '<button type="button" class="btn btn-primary" data-skill="' + (i + 1) + '">ไปด้านที่ ' + D.hlDomains[i + 1].n + " →</button>";
+      else fwd = '<button type="button" class="btn btn-primary" data-tofoot>ไปบันทึก ↓</button>';
+      actions = back + fwd;
+    }
     var el = $("#skill");
-    el.className = "card topic skill theme-" + d.theme;
     el.setAttribute("aria-labelledby", "stab-" + d.id);
     el.innerHTML =
-      '<div class="skill-hero"><p class="skill-n">ด้านที่ ' + d.n + " จาก " + D.hlDomains.length + " · " + esc(d.en) + "</p>" +
-      '<h3><span aria-hidden="true">' + d.icon + "</span>" + esc(d.title) + "</h3>" +
-      '<div class="skill-goal"><strong>🎯 เป้าหมาย</strong><p>' + esc(d.goal) + "</p></div></div>" +
-      d.html +
-      '<div class="q-section"><h4 class="q-title">สถานการณ์จำลอง + แบบฝึกทักษะ</h4><p class="muted">อ่านสถานการณ์ แล้วเลือกคำตอบที่ถูกต้องที่สุด (ตอบได้ครั้งเดียว ระบบจะแสดงเฉลยทันที)</p>' +
-      '<div class="q-grid">' + d.quiz.map(quizCard).join("") + "</div></div>" +
-      '<div class="remember"><strong>💡 จำไว้เสมอ!</strong><ul>' + d.remember.map(function (r) { return "<li>" + esc(r) + "</li>"; }).join("") + "</ul></div>" +
-      '<div class="topic-nav">' + prev + next + "</div>";
+      '<header class="sk-head"><p class="sk-kicker">ด้านที่ ' + d.n + " จาก " + D.hlDomains.length + " · " + esc(d.en) + "</p>" +
+      '<h3><span aria-hidden="true">' + d.icon + "</span> " + esc(d.title) + "</h3>" +
+      '<p class="sk-goal">' + esc(d.goal) + "</p>" + tabs + "</header>" +
+      body + '<div class="topic-nav sk-actions">' + actions + "</div>";
     updateSkillsFoot();
     if (focus) {
       var tab = $("#stab-" + d.id); if (tab) tab.scrollIntoView({ block: "nearest", inline: "center" });
@@ -660,8 +690,9 @@
   function updateSkillsFoot() {
     var n = D.hlDomains.filter(skillDone).length, total = D.hlDomains.length, btn = $("#btnSkillsDone"), hint = $("#skillsHint");
     $("#skillCount").textContent = "ทำครบแล้ว " + n + " / " + total + " ด้าน";
-    $$("#skillTabs .tab").forEach(function (t, j) {
-      if (skillDone(D.hlDomains[j]) && !$(".done", t)) t.insertAdjacentHTML("beforeend", '<span class="done" aria-label="ทำครบแล้ว">✓</span>');
+    $$("#skillTabs .sk-step").forEach(function (t, j) {
+      var done = skillDone(D.hlDomains[j]); t.classList.toggle("is-done", done);
+      $(".sk-dot", t).textContent = done ? "✓" : D.hlDomains[j].n;
     });
     if (S.postSaved) { btn.disabled = false; btn.textContent = "ดูผลของฉัน"; hint.textContent = "ท่านทำครบทั้ง 2 ครั้งแล้ว ทบทวนได้ตลอด"; }
     else if (S.stage1Saved) {
@@ -673,7 +704,7 @@
     }
   }
 
-  $("#skillTabs").addEventListener("click", function (e) { var t = e.target.closest(".tab"); if (t) showSkill(Number(t.getAttribute("data-i")), true); });
+  $("#skillTabs").addEventListener("click", function (e) { var t = e.target.closest(".sk-step"); if (t) showSkill(Number(t.getAttribute("data-i")), true); });
   $("#skillTabs").addEventListener("keydown", function (e) {
     if (["ArrowRight", "ArrowLeft", "Home", "End"].indexOf(e.key) === -1) return;
     e.preventDefault();
@@ -685,16 +716,19 @@
     showSkill(i, false); $("#stab-" + D.hlDomains[i].id).focus();
   });
   $("#skill").addEventListener("click", function (e) {
-    var b = e.target.closest("[data-skill]"); if (b) return showSkill(Number(b.getAttribute("data-skill")), true);
+    var t;
+    if ((t = e.target.closest("[data-skill]"))) return showSkill(Number(t.getAttribute("data-skill")), true);
+    if ((t = e.target.closest("[data-phase]"))) return showSkill(S.skillTopic, true, t.getAttribute("data-phase"), firstOpenQ(D.hlDomains[S.skillTopic]));
+    if ((t = e.target.closest("[data-qi]"))) return showSkill(S.skillTopic, true, "quiz", Number(t.getAttribute("data-qi")));
+    if (e.target.closest("[data-tofoot]")) { var f = $("#btnSkillsDone"); f.scrollIntoView({ behavior: "smooth", block: "center" }); if (!f.disabled) f.focus({ preventScroll: true }); return; }
     var o = e.target.closest("[data-o]");
     if (!o || o.disabled) return;
     var qid = o.getAttribute("data-q");
     if (S.skillQuiz[qid] != null) return;
     S.skillQuiz[qid] = Number(o.getAttribute("data-o")); save();
-    var card = o.closest(".q-card"), d = D.hlDomains[S.skillTopic];
-    var qi = d.quiz.map(function (q) { return q.id; }).indexOf(qid);
-    card.outerHTML = quizCard(d.quiz[qi], qi);
-    updateSkillsFoot();
+    showSkill(S.skillTopic, false, "quiz", S.skillQi);
+    var fbEl = $("#qc-" + qid + " .q-feedback");
+    if (fbEl) { fbEl.focus({ preventScroll: true }); fbEl.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
   });
 
   $("#btnSkillsDone").addEventListener("click", function () {
