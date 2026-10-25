@@ -175,9 +175,12 @@
     if (view === "hlpre" && S.hlPreCompleted) view = "pre";
     if (view === "pre" && S.preCompleted) view = "content";
     // ครั้งที่ 1: ความรอบรู้ (หลัง) ทำได้เมื่ออ่านเนื้อหาและทำ 6 ด้านครบ · ครั้งที่ 2: พฤติกรรม (หลัง) เมื่อครบ 7 วัน
+    var pendingAlert = null;
     if (view === "hlpost") {
       if (S.stage1Saved) view = nextStep();
-      else if (!S.preCompleted || !allTopicsRead() || !allSkillsDone()) { toast(!allTopicsRead() ? "กรุณาอ่านเนื้อหาให้ครบทุกหัวข้อก่อน" : "กรุณาทำความรอบรู้ด้านสุขภาพให้ครบทั้ง 6 ด้านก่อน"); view = nextStep(); }
+      else if (!S.preCompleted) view = nextStep();
+      else if (!allTopicsRead()) { view = "content"; pendingAlert = "read"; }
+      else if (!allSkillsDone()) { view = "skills"; pendingAlert = "skills"; }
     }
     if (view === "post") {
       if (!S.stage1Saved) { toast("กรุณาทำครั้งที่ 1 ให้ครบก่อน"); view = nextStep(); }
@@ -201,6 +204,7 @@
     clearInterval(waitTimer);
     renderView(view);
     updateNav();
+    if (pendingAlert) setTimeout(function () { if (pendingAlert === "read") showReadAlert(); else showSkillsAlert(); }, 60);
     if (!opts.keepScroll) window.scrollTo(0, 0);
     if (!opts.noFocus) { var m = $("#main"); if (m) m.focus({ preventScroll: true }); }
   }
@@ -231,7 +235,7 @@
     if (k === "home") return go("home");
     if (k === "content") return go("content");
     if (k === "sources") return go("sources");
-    if (k === "assess") return go(S.id ? nextStep() : "consent");
+    if (k === "assess") return go(!S.id ? "consent" : (S.preCompleted && !S.stage1Saved) ? "hlpost" : nextStep());
   });
 
   $("#btnStart").addEventListener("click", function () { go(S.id ? nextStep() : "consent"); });
@@ -707,6 +711,7 @@
   }
 
   function updateSkillsFoot() {
+    var sa = $("#skillsAlert"); if (sa && !sa.hidden) { if (allSkillsDone()) sa.hidden = true; else showSkillsAlertQuiet(); }
     var n = D.hlDomains.filter(skillDone).length, total = D.hlDomains.length, btn = $("#btnSkillsDone"), hint = $("#skillsHint");
     $("#skillCount").textContent = "ทำครบแล้ว " + n + " / " + total + " ด้าน";
     $$("#skillTabs .sk-step").forEach(function (t, j) {
@@ -718,7 +723,7 @@
       btn.disabled = false; btn.textContent = unlocked() ? "ทำแบบประเมินหลังเรียน" : "ดูวันนัดของฉัน";
       hint.textContent = unlocked() ? (LOCK ? "ครบ 7 วันแล้ว ทำแบบประเมินหลังเรียนได้เลย" : "ทำแบบประเมินหลังเรียนได้เลย") : "ทบทวนได้ระหว่างรอครบ 7 วัน";
     } else {
-      btn.disabled = n < total; btn.textContent = "ทำครบแล้ว ไปแบบประเมินความรอบรู้";
+      btn.disabled = false; btn.textContent = "ทำครบแล้ว ไปแบบประเมินความรอบรู้";
       hint.textContent = n < total ? "ศึกษาเนื้อหาและทำตัวอย่างสถานการณ์ให้ครบทั้ง " + total + " ด้าน แล้วกดปุ่มด้านล่างเพื่อทำแบบประเมินความรอบรู้ด้านสุขภาพ (หลังเข้าร่วมโปรแกรม)" : "ทำครบทั้ง " + total + " ด้านแล้ว กดปุ่มด้านล่างเพื่อทำแบบประเมินความรอบรู้ด้านสุขภาพ (หลังเข้าร่วมโปรแกรม) แล้วรับวันนัด";
     }
   }
@@ -750,10 +755,32 @@
     if (fbEl) { fbEl.focus({ preventScroll: true }); fbEl.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
   });
 
+  function showSkillsAlertQuiet() { var y = window.scrollY; showSkillsAlert(); window.scrollTo(0, y); }
+  // ยังทำ 6 ด้านไม่ครบ: แจ้งว่าเหลือด้านไหน สถานการณ์ข้อไหน (กดเพื่อไปทำต่อ)
+  function showSkillsAlert() {
+    var box = $("#skillsAlert");
+    var left = D.hlDomains.map(function (d, i) {
+      var open = d.quiz.map(function (q, k) { return S.skillQuiz[q.id] == null ? k : -1; }).filter(function (k) { return k > -1; });
+      return { d: d, i: i, open: open, unread: S.skillRead.indexOf(d.id) === -1 };
+    }).filter(function (x) { return x.open.length || x.unread; });
+    if (!left.length) { box.hidden = true; return; }
+    box.innerHTML = "<strong>คุณยังทำความรอบรู้ด้านสุขภาพไม่ครบ กรุณาทำให้ครบทั้ง 6 ด้าน</strong><p>ยังเหลือ " + left.length + " ด้าน:</p><ul>" +
+      left.map(function (x) {
+        return '<li><button type="button" class="link" data-goskill="' + x.i + '" data-qi="' + (x.open[0] || 0) + '">ด้านที่ ' + x.d.n + " " + esc(x.d.title) + "</button> · " +
+          (x.open.length ? "ยังไม่ได้ตอบสถานการณ์ข้อ " + x.open.map(function (k) { return k + 1; }).join(", ") : "ยังไม่ได้อ่าน") + "</li>";
+      }).join("") + "</ul>";
+    box.hidden = false;
+    box.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  $("#skillsAlert").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-goskill]"); if (!b) return;
+    showSkill(Number(b.getAttribute("data-goskill")), true, "quiz", Number(b.getAttribute("data-qi")));
+  });
+
   $("#btnSkillsDone").addEventListener("click", function () {
     if (!S.preCompleted) return go(nextStep());
     if (S.stage1Saved) return go(nextStep());
-    if (!allSkillsDone()) return toast("กรุณาทำความรอบรู้ด้านสุขภาพให้ครบทั้ง 6 ด้านก่อน");
+    if (!allSkillsDone()) return showSkillsAlert();
     go("hlpost");
   });
 
@@ -854,6 +881,11 @@
         shown = !shown; $("#myCode").textContent = shown ? S.code : "••••••"; this.textContent = shown ? "ซ่อนรหัส" : "แสดงรหัส";
       });
     };
+    var draw0 = draw;
+    draw = function () {
+      draw0();
+      if (!isNaN(new Date(S.unlockAt).getTime())) card.insertAdjacentHTML("beforeend", '<div class="stage1-results"><h2>ผลการประเมินครั้งที่ 1</h2><p class="muted">เปรียบเทียบคะแนนความรอบรู้ด้านสุขภาพ ก่อนและหลังศึกษาเนื้อหา</p>' + resultsHtml(false) + "</div>");
+    };
     draw();
     waitTimer = setInterval(function () { if (S.view === "wait") draw(); }, 30000);
   }
@@ -933,7 +965,8 @@
   /* ======================================================
      สรุปผล
      ====================================================== */
-  function renderSummary() {
+  // ผลการประเมิน · final=false: ท้ายครั้งที่ 1 (ความรอบรู้ก่อน–หลัง + พฤติกรรมก่อน) · final=true: หน้าสรุปผลครั้งที่ 2
+  function resultsHtml(final) {
     var pre = calc("pre"), post = calc("post"), bMax = D.pre.items.length * D.scoreMax;
     var hlPre = calc("hlpre"), hlPost = calc("hlpost"), hlMax = D.hlpre.scoreMax;
     // กล่องคะแนน: ความรอบรู้แสดงคะแนนเฉลี่ย · พฤติกรรมแสดงคะแนนรวม (ตามเกณฑ์ของแต่ละแบบประเมิน)
@@ -973,18 +1006,25 @@
       (hlMain ? '<div class="advice ' + hlMain.key + '"><h4>ความรอบรู้ด้านสุขภาพ' + hlMain.label + "</h4><p>" + esc(hlMain.message) + "</p></div>" : "") +
       criteriaTable(D.hlpre.levels, hlPre, hlPost, "คะแนนเฉลี่ย", "เกณฑ์การแปลผลความรอบรู้ด้านสุขภาพ (คะแนนเฉลี่ย 1–" + hlMax + ")");
     var bd = pre.n && post.n ? post.total - pre.total : null;
-    var main = post.level || pre.level;
-    $("#summaryCard").innerHTML =
-      '<p class="eyebrow">ขั้นที่ 3 · ครั้งที่ 2 · สรุปผล</p><h2>ผลการประเมินของคุณ</h2>' + hlHtml +
-      '<h3 class="sum-h">2. พฤติกรรมการป้องกันความเสี่ยงการเกิดโรคซิฟิลิส</h3>' +
+    var main = (final && post.level) || pre.level;
+    var bhHtml = '<h3 class="sum-h">2. พฤติกรรมการป้องกันความเสี่ยงการเกิดโรคซิฟิลิส</h3>' +
       '<p class="muted">คะแนนรวม 0–' + bMax + ' <strong>คะแนนยิ่งสูง ยิ่งมีพฤติกรรมการป้องกันที่ดี</strong></p>' +
-      '<div class="score-grid">' + scoreBox("ก่อนเข้าร่วมโปรแกรม", pre, "before", true) + scoreBox("หลังเข้าร่วมโปรแกรม", post, "after", true) + "</div>" +
-      '<div class="bars">' + bar("ก่อน", pre.n ? pre.total : null, bMax, "before", pre.n ? pre.total : "—") + bar("หลัง", post.n ? post.total : null, bMax, "after", post.n ? post.total : "—") + "</div>" +
-      changeLine(bd, "คะแนนพฤติกรรม", function (x) { return x; }) +
+      (final
+        ? '<div class="score-grid">' + scoreBox("ก่อนเข้าร่วมโปรแกรม", pre, "before", true) + scoreBox("หลังเข้าร่วมโปรแกรม", post, "after", true) + "</div>" +
+          '<div class="bars">' + bar("ก่อน", pre.n ? pre.total : null, bMax, "before", pre.n ? pre.total : "—") + bar("หลัง", post.n ? post.total : null, bMax, "after", post.n ? post.total : "—") + "</div>" +
+          changeLine(bd, "คะแนนพฤติกรรม", function (x) { return x; })
+        : '<div class="score-grid">' + scoreBox("ก่อนเข้าร่วมโปรแกรม", pre, "before", true) +
+          '<div class="score pending"><div class="s-label">หลังเข้าร่วมโปรแกรม</div><div class="s-num">—</div><div class="s-sub">ทำในครั้งที่ 2 แล้วจะเห็นผลเปรียบเทียบ</div></div></div>') +
       (main ? '<div class="advice ' + main.key + '"><h4>พฤติกรรมอยู่ใน' + main.label + "</h4><p>" + esc(main.message) + '</p><p class="tips-h">คำแนะนำ</p><ul>' +
         main.tips.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul></div>" : "") +
-      criteriaTable(D.levels, pre, post, "คะแนนรวม", "เกณฑ์การแปลผลพฤติกรรม (คะแนนรวม 0–" + bMax + ")") +
-      '<p class="disclaimer">' + esc(D.disclaimer) + "</p>" +
+      criteriaTable(D.levels, pre, final ? post : {}, "คะแนนรวม", "เกณฑ์การแปลผลพฤติกรรม (คะแนนรวม 0–" + bMax + ")") +
+      '<p class="disclaimer">' + esc(D.disclaimer) + "</p>";
+    return hlHtml + bhHtml;
+  }
+
+  function renderSummary() {
+    $("#summaryCard").innerHTML =
+      '<p class="eyebrow">ขั้นที่ 3 · ครั้งที่ 2 · สรุปผล</p><h2>ผลการประเมินของคุณ</h2>' + resultsHtml(true) +
       '<div class="save-status ok">✓ บันทึกคำตอบทั้ง 2 ครั้งเรียบร้อยแล้ว</div>' +
       '<div class="actions"><button class="btn btn-ghost" type="button" data-nav="content">ทบทวนเนื้อหา</button><button class="btn btn-primary" type="button" id="btnToThanks">ไปต่อ</button></div>';
     $("#btnToThanks").addEventListener("click", function () { go("thanks"); });

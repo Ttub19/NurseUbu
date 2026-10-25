@@ -14,7 +14,7 @@ window.APP_CONFIG = {
   //   false = ปิดล็อก ทำแบบประเมินหลังเรียนได้ทันทีหลังบันทึกครั้งที่ 1 (ยังส่งอีเมลเตือนเมื่อครบ WAIT_DAYS วัน)
   //   true  = เปิดล็อก ต้องรอครบ WAIT_DAYS วัน
   // ต้องตั้งให้ตรงกับ LOCK_ENABLED ใน Code.gs (ตัวที่ล็อกจริงคือฝั่ง Google Apps Script)
-  LOCK_POST: true,
+  LOCK_POST: false,
 
   // ระยะเวลาที่ต้องรอ / วันส่งอีเมลเตือน (วัน) ต้องตั้งให้ตรงกับ WAIT_DAYS ใน Code.gs
   WAIT_DAYS: 7,

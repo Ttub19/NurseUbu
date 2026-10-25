@@ -654,3 +654,9 @@ body.on-home .deco { display: none; }
 /* ที่มาภาพใต้รูปประกอบเนื้อหา */
 .photo-credit { display: block; margin-top: 4px; font-size: .82rem; color: var(--ink-soft); word-break: break-word; }
 .photo-credit a { color: inherit; }
+
+/* ผลการประเมินครั้งที่ 1 (ใต้การ์ดหลังบันทึกครั้งที่ 1) */
+.stage1-results { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--line); text-align: left; }
+.stage1-results > h2 { font-size: 1.35rem; margin-bottom: 4px; }
+.score.pending { background: #F6F4F1; border: 1.5px dashed var(--line); color: var(--ink-soft); }
+.score.pending .s-num { color: var(--ink-soft); }
