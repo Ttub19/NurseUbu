@@ -660,3 +660,17 @@ body.on-home .deco { display: none; }
 .stage1-results > h2 { font-size: 1.35rem; margin-bottom: 4px; }
 .score.pending { background: #F6F4F1; border: 1.5px dashed var(--line); color: var(--ink-soft); }
 .score.pending .s-num { color: var(--ink-soft); }
+
+/* รายชื่อผู้วิจัย: ชื่อ / รหัสนักศึกษา คนละบรรทัด · เว้น 1 บรรทัดก่อนอาจารย์ที่ปรึกษา */
+.cfg-list li.member, .credits .team li.member { display: flex; flex-direction: column; padding: 4px 0; line-height: 1.5; }
+.m-id { color: var(--ink-soft); font-size: .92em; }
+.cfg-list li.m-note, .credits .team li.m-note { grid-column: 1 / -1; font-weight: 600; padding-top: 6px; margin-bottom: 1.4em; }
+.credits .advisor { margin-top: 0; }
+
+/* ที่มาภาพหน้าแรก */
+.hero-credit { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); bottom: 8px; margin: 0; max-width: min(46%, 460px); text-align: right; font-size: .74rem; line-height: 1.4; color: rgba(255,255,255,.78); }
+.hero-credit a { color: inherit; word-break: break-all; }
+@media (max-width: 640px) {
+  .hero-credit { left: 12px; right: 12px; max-width: none; text-align: center; bottom: 6px; }
+  .hero-full .scroll-hint { bottom: 44px; }
+}

@@ -575,6 +575,11 @@ APP_DATA.references = [
     used: "ภาพประกอบหัวข้ออาการแต่ละระยะ"
   },
   {
+    text: "ที่มาภาพ: Pinterest. (ม.ป.ป.). ภาพประกอบจาก Pinterest.",
+    url: "https://pin.it/XLJsMyCVt",
+    used: "ภาพพื้นหลังหน้าแรก"
+  },
+  {
     text: "ที่มาภาพ: The Healthy. (2019). The Most Groundbreaking Cancer Research of 2017.",
     url: "https://www.thehealthy.com/wp-content/uploads/2019/01/23-Groundbreaking-Cancer-Research-That-Could-Save-Your-Life.jpg?fit=700%2C467",
     used: "ภาพประกอบหัวข้อการวินิจฉัยโรค"

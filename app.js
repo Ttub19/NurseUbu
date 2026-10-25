@@ -132,9 +132,15 @@
   function apiMsg(e) { return API_MSG[e && e.code] || API_MSG.server; }
 
   /* ---------------- ค่าตั้งในหน้า ---------------- */
+  // รายชื่อผู้วิจัย: ชื่อ 1 บรรทัด · รหัสนักศึกษาอีกบรรทัด · บรรทัด "นักศึกษา…ชั้นปีที่ 3" แยกต่างหาก
+  function memberLi(x) {
+    var m = String(x).match(/^(.*?)\s*(รหัสนักศึกษา\s*\S+)\s*$/);
+    if (m) return '<li class="member"><span class="m-name">' + esc(m[1]) + '</span><span class="m-id">' + esc(m[2]) + "</span></li>";
+    return '<li class="m-note">' + esc(x) + "</li>";
+  }
   $$("[data-cfg]").forEach(function (el) {
     var v = CFG[el.getAttribute("data-cfg")];
-    if (Array.isArray(v)) el.innerHTML = '<ul class="cfg-list">' + v.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>";
+    if (Array.isArray(v)) el.innerHTML = '<ul class="cfg-list">' + v.map(memberLi).join("") + "</ul>";
     else el.textContent = v || "";
   });
   if (CFG.HERO_IMAGE) document.documentElement.style.setProperty("--hero-img", 'url("' + String(CFG.HERO_IMAGE).replace(/"/g, "") + '")');
@@ -148,8 +154,8 @@
   (function renderCredits() {
     var T = CFG.TEAM || {};
     var html = '<h3>คณะผู้จัดทำ</h3>' +
-      (T.members && T.members.length ? '<ul class="team">' + T.members.map(function (m) { return "<li>" + esc(m) + "</li>"; }).join("") + "</ul>" : "") +
-      (T.advisor ? '<p><span class="muted">อาจารย์ที่ปรึกษา</span> ' + esc(T.advisor) + "</p>" : "") +
+      (T.members && T.members.length ? '<ul class="team">' + T.members.map(memberLi).join("") + "</ul>" : "") +
+      (T.advisor ? '<p class="advisor"><span class="muted">อาจารย์ที่ปรึกษา</span> ' + esc(T.advisor) + "</p>" : "") +
       (T.unit ? '<p class="muted">' + esc(T.unit) + "</p>" : "");
     $$("[data-credits]").forEach(function (el) { el.innerHTML = html; });
   })();
