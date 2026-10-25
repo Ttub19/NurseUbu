@@ -45,39 +45,48 @@
   /* ======================================================
      คำนวณคะแนนจากคำตอบดิบ (ใช้เกณฑ์เดียวกับหน้าเว็บ)
      ====================================================== */
-  function levelOf(mean) {
+  function levelOf(mean, levels) {
+    levels = levels || D.levels;
     if (mean == null) return null;
-    for (var i = 0; i < D.levels.length; i++) if (mean >= D.levels[i].min) return D.levels[i];
-    return D.levels[D.levels.length - 1];
+    for (var i = 0; i < levels.length; i++) if (mean >= levels[i].min) return levels[i];
+    return levels[levels.length - 1];
   }
   function scoreSet(raw, kind) {
-    var items = D[kind].items, scores = {}, sum = 0, n = 0;
-    items.forEach(function (it) {
+    var set = D[kind], scores = {}, sum = 0, n = 0;
+    set.items.forEach(function (it) {
       var r = raw[it.id + "_raw"];
-      var v = (r === "SKIP" || r === "NA" || r === "" || r == null || isNaN(r)) ? null : Number(r);
-      var s = v == null ? null : (it.dir === "-" ? v : D.scoreMax - v); // คะแนนความเสี่ยง: สูง = เสี่ยงมาก
+      var v = (r === "" || r == null || isNaN(r)) ? null : Number(r);
+      var s = v == null ? null
+        : set.hl ? (it.rev ? set.scoreMax + 1 - v : v) // ความรอบรู้: สูง = รอบรู้มาก
+        : (it.dir === "-" ? D.scoreMax - v : v); // คะแนนพฤติกรรม: สูง = พฤติกรรมดี (ข้อเสี่ยงกลับคะแนน)
       scores[it.id] = s;
       if (s != null) { sum += s; n++; }
     });
     var mean = n ? Math.round((sum / n) * 100) / 100 : null;
-    return { scores: scores, n: n, mean: mean, total: n ? sum : null, level: levelOf(mean) };
+    return { scores: scores, n: n, mean: mean, total: n ? sum : null, level: D.levelFor(set.levels || D.levels, mean, n ? sum : null, n) };
+  }
+  function change(a, b) {
+    var diff = a.mean != null && b.mean != null ? Math.round((b.mean - a.mean) * 100) / 100 : null;
+    return { diff: diff, pct: diff != null && a.mean ? Math.round((diff / a.mean) * 1000) / 10 : null };
   }
   function enrich(r) {
     var pre = scoreSet(r, "pre"), post = scoreSet(r, "post");
-    var diff = pre.mean != null && post.mean != null ? Math.round((post.mean - pre.mean) * 100) / 100 : null;
-    var pct = diff != null && pre.mean ? Math.round((diff / pre.mean) * 1000) / 10 : null;
-    var dir = diff == null ? "" : diff > 0 ? "ความเสี่ยงเพิ่มขึ้น" : diff < 0 ? "ความเสี่ยงลดลง" : "เท่าเดิม";
+    // พฤติกรรมเทียบด้วยคะแนนรวม 0–56 (ตามเกณฑ์) · บวก = ดีขึ้น
+    var c = pre.total != null && post.total != null ? { diff: post.total - pre.total, pct: pre.total ? Math.round((post.total - pre.total) / pre.total * 1000) / 10 : null } : { diff: null, pct: null };
+    var hlPre = scoreSet(r, "hlpre"), hlPost = scoreSet(r, "hlpost"), hc = change(hlPre, hlPost);
+    var diff = c.diff, pct = c.pct;
+    var dir = diff == null ? "" : diff > 0 ? "พฤติกรรมดีขึ้น" : diff < 0 ? "พฤติกรรมแย่ลง" : "เท่าเดิม";
     return {
       raw: r,
       id: String(r.response_id || ""),
       started: r.started_at || r.received_at || "",
       finished: r.post_done_at || r.finished_at || "",
       duration: num(r.duration_min) != null ? num(r.duration_min) : (r.content_done_at && r.started_at ? Math.round((new Date(r.content_done_at) - new Date(r.started_at)) / 600) / 100 : null),
-      isUbu: r.is_ubu_student || "",
-      nonUbu: r.flag_non_ubu === "NON-UBU" || r.is_ubu_student === "ไม่ใช่",
       gender: r.gender || "", year: r.year || "", faculty: r.faculty || "",
-      prior: r.info_sources || r.prior_knowledge || "", preSex: r.pre_sex || "", postSex: r.post_sex || "", sex: r.ever_sex || "", consent: r.consent || "",
+      sex: r.ever_sex || "", consent: r.consent || "",
       pre: pre, post: post, diff: diff, pct: pct, dir: dir,
+      hlPre: hlPre, hlPost: hlPost, hlDiff: hc.diff, hlPct: hc.pct,
+      hlDir: hc.diff == null ? "" : hc.diff > 0 ? "ความรอบรู้เพิ่มขึ้น" : hc.diff < 0 ? "ความรอบรู้ลดลง" : "เท่าเดิม",
       topics: num(r.content_topics_read), thank: r.thank_msg_no || "", received: r.received_at || "",
       status: r.status || (r.post_done_at || r.post1_raw ? "ทำครบ" : "รอทำหลังเรียน"),
       contentDone: r.content_done_at || "", unlockAt: r.unlock_at || "", postDone: r.post_done_at || "",
@@ -132,12 +141,14 @@
     for (var i = 0; i < 200; i++) { var mid = (lo + hi) / 2; if (pTwoTailed(mid, df) > alpha) lo = mid; else hi = mid; }
     return (lo + hi) / 2;
   }
-  function pairedT(rows) {
-    var pairs = rows.filter(function (r) { return r.diff != null; });
+  // a, b = ชื่อชุดคะแนนก่อน/หลัง ("pre"/"post" พฤติกรรม หรือ "hlPre"/"hlPost" ความรอบรู้)
+  function pairedT(rows, a, b, f) {
+    a = a || "pre"; b = b || "post"; f = f || "mean"; // พฤติกรรมใช้คะแนนรวม (total) · ความรอบรู้ใช้คะแนนเฉลี่ย (mean)
+    var pairs = rows.filter(function (r) { return r[a][f] != null && r[b][f] != null; });
     var n = pairs.length;
-    var pre = pairs.map(function (r) { return r.pre.mean; });
-    var post = pairs.map(function (r) { return r.post.mean; });
-    var d = pairs.map(function (r) { return r.post.mean - r.pre.mean; });
+    var pre = pairs.map(function (r) { return r[a][f]; });
+    var post = pairs.map(function (r) { return r[b][f]; });
+    var d = pairs.map(function (r) { return r[b][f] - r[a][f]; });
     var res = { n: n, preM: n ? mean(pre) : null, preSD: sd(pre), postM: n ? mean(post) : null, postSD: sd(post), dM: n ? mean(d) : null, dSD: sd(d) };
     if (n >= 2 && res.dSD > 0) {
       var se = res.dSD / Math.sqrt(n);
@@ -160,7 +171,6 @@
     var rows = [], now = Date.now();
     for (var i = 0; i < 64; i++) {
       var everSex = rnd() < 0.62 ? "เคย" : "ไม่เคย";
-      var ubu = rnd() < 0.93;
       var start = new Date(now - Math.floor(rnd() * 26 * 864e5) - Math.floor(rnd() * 8 * 36e5));
       var mins = 8 + Math.floor(rnd() * 18);
       var cDone = new Date(start.getTime() + mins * 6e4), unlock = new Date(cDone.getTime() + 7 * 864e5);
@@ -170,24 +180,31 @@
         response_id: "R-DEMO" + String(100 + i), started_at: start.toISOString(),
         content_done_at: cDone.toISOString(), unlock_at: unlock.toISOString(), duration_min: mins,
         status: done ? "ทำครบ" : "รอทำหลังเรียน", email_reminder: unlock.getTime() < now ? "ส่งแล้ว" : "รอส่ง",
-        is_ubu_student: ubu ? "ใช่" : "ไม่ใช่", flag_non_ubu: ubu ? "" : "NON-UBU",
-        gender: pick(D.genders), year: pick(D.years), faculty: ubu ? pick(D.faculties) : "อื่น ๆ (ไม่ใช่นักศึกษา ม.อุบลฯ)",
-        info_sources: rnd() < 0.15 ? D.infoSourceNone : D.infoSources.filter(function () { return rnd() < 0.4; }).join("; ") || D.infoSources[0], ever_sex: everSex, consent: "ยินยอม",
+        consent: "ยินยอม",
         content_topics_read: 9, thank_msg_no: 1 + Math.floor(rnd() * 5), received_at: start.toISOString()
       };
+      D.infoFields.forEach(function (f) {
+        if (f.type === "number") { r[f.name] = 18 + Math.floor(rnd() * 6); return; }
+        if (f.type === "multi") {
+          var picked = f.options.filter(function () { return rnd() < 0.35; });
+          r[f.name] = (picked.length ? picked : [f.options[0]]).join("; ");
+          f.options.forEach(function (o, j) { r["src" + (j + 1)] = picked.indexOf(o) > -1 ? 1 : 0; });
+        } else r[f.name] = f.other && rnd() < 0.9 ? pick(f.options.filter(function (o) { return o !== f.other; })) : pick(f.options);
+        if (f.other) r[f.name + "_other"] = String(r[f.name]).indexOf(f.other) > -1 ? "ตัวอย่างข้อความระบุ" : "";
+      });
+      r.ever_sex = everSex;
+      var hlBase = 2.4 + rnd() * 1.6, hlLift = 0.2 + rnd() * 0.9; // ความรอบรู้พื้นฐาน 1–5 และส่วนที่เพิ่มขึ้นหลังเรียน
+      D.hlpre.items.forEach(function (it) { r[it.id + "_raw"] = Math.max(1, Math.min(5, Math.round(hlBase + (rnd() - 0.5) * 1.8))); });
       var base = 1.2 + rnd() * 2.2; // ระดับความเสี่ยงพื้นฐาน 0–4
-      r.pre_sex = everSex === "ไม่เคย" || rnd() < 0.2 ? "ไม่มี" : "มี";
       D.pre.items.forEach(function (it) {
-        if (it.sex && r.pre_sex === "ไม่มี") { r[it.id + "_raw"] = "SKIP"; return; }
         var risk = Math.max(0, Math.min(4, Math.round(base + (rnd() - 0.5) * 1.8)));
         r[it.id + "_raw"] = it.dir === "-" ? risk : 4 - risk;
       });
       var lift = 0.2 + rnd() * 0.8; // ความเสี่ยงลดลงหลังเรียน
       if (done) {
         r.post_done_at = postDone.toISOString(); r.gap_days = Math.round(gap * 100) / 100;
-        r.post_sex = r.pre_sex === "ไม่มี" || rnd() < 0.45 ? "ไม่มี" : "มี";
+        D.hlpost.items.forEach(function (it) { r[it.id + "_raw"] = Math.max(1, Math.min(5, Math.round(hlBase + hlLift + (rnd() - 0.5) * 1.6))); });
         D.post.items.forEach(function (it) {
-          if (it.sex && r.post_sex === "ไม่มี") { r[it.id + "_raw"] = "SKIP"; return; }
           var risk = Math.max(0, Math.min(4, Math.round(base - lift + (rnd() - 0.5) * 1.6)));
           r[it.id + "_raw"] = it.dir === "-" ? risk : 4 - risk;
         });
@@ -331,15 +348,14 @@
   function apply() {
     var q = $("#q").value.trim().toLowerCase();
     var fv = {}; FILTERS.forEach(function (f) { fv[f.key] = $(f.el).value; });
-    var from = $("#fFrom").value, to = $("#fTo").value, ubu = $("#fUbu").checked;
+    var from = $("#fFrom").value, to = $("#fTo").value;
     ST.filtered = ST.rows.filter(function (r) {
-      if (ubu && r.nonUbu) return false;
       for (var k in fv) if (fv[k] && r[k] !== fv[k]) return false;
       var dk = dayKey(r.started);
       if (from && dk < from) return false;
       if (to && dk > to) return false;
       if (q) {
-        var hay = [r.id, r.faculty, r.gender, r.year, r.sex, r.dir, r.status, r.pre.level && r.pre.level.label, r.post.level && r.post.level.label, fmtTH(r.started), r.nonUbu ? "non-ubu" : ""].join(" ").toLowerCase();
+        var hay = [r.id, r.faculty, r.gender, r.year, r.sex, r.dir, r.status, r.pre.level && r.pre.level.label, r.post.level && r.post.level.label, fmtTH(r.started)].join(" ").toLowerCase();
         if (hay.indexOf(q) < 0) return false;
       }
       return true;
@@ -347,16 +363,16 @@
     sortRows();
     ST.page = 1;
     var hidden = ST.rows.length - ST.filtered.length;
-    $("#resultCount").textContent = "แสดง " + ST.filtered.length + " จาก " + ST.rows.length + " รายการ" + (ubu && ST.rows.some(function (r) { return r.nonUbu; }) ? " · ซ่อน NON-UBU " + ST.rows.filter(function (r) { return r.nonUbu; }).length : "");
-    renderKpis(); renderStats(); renderLevelChart(); renderFacultyChart(); renderSatisfaction(); renderTable();
+    $("#resultCount").textContent = "แสดง " + ST.filtered.length + " จาก " + ST.rows.length + " รายการ";
+    renderKpis(); renderHlKpis(); renderStats(); renderHlStats(); renderLevelChart(); renderHlLevelChart(); renderFacultyChart(); renderSatisfaction(); renderTable();
   }
 
   var deb;
   $("#q").addEventListener("input", function () { clearTimeout(deb); deb = setTimeout(apply, 180); });
-  ["#fFaculty", "#fGender", "#fYear", "#fSex", "#fStatus", "#fFrom", "#fTo", "#fUbu"].forEach(function (s) { $(s).addEventListener("change", apply); });
+  ["#fFaculty", "#fGender", "#fYear", "#fSex", "#fStatus", "#fFrom", "#fTo"].forEach(function (s) { $(s).addEventListener("change", apply); });
   $("#clearBtn").addEventListener("click", function () {
     $("#q").value = ""; FILTERS.forEach(function (f) { $(f.el).value = ""; });
-    $("#fFrom").value = ""; $("#fTo").value = ""; $("#fUbu").checked = true; apply();
+    $("#fFrom").value = ""; $("#fTo").value = ""; apply();
   });
 
   /* ======================================================
@@ -366,26 +382,46 @@
   function groupPct(rows) {
     var pairs = rows.filter(function (r) { return r.diff != null; });
     if (!pairs.length) return "";
-    var mPre = mean(pairs.map(function (r) { return r.pre.mean; })), mPost = mean(pairs.map(function (r) { return r.post.mean; }));
+    var mPre = mean(pairs.map(function (r) { return r.pre.total; })), mPost = mean(pairs.map(function (r) { return r.post.total; }));
     if (!mPre) return "";
     return "ร้อยละการเปลี่ยนแปลงของกลุ่ม " + signed((mPost - mPre) / mPre * 100, 1) + "%";
   }
   function renderKpis() {
     var rows = ST.filtered;
-    var pres = rows.map(function (r) { return r.pre.mean; }).filter(function (x) { return x != null; });
-    var posts = rows.map(function (r) { return r.post.mean; }).filter(function (x) { return x != null; });
+    var pres = rows.map(function (r) { return r.pre.total; }).filter(function (x) { return x != null; });
+    var posts = rows.map(function (r) { return r.post.total; }).filter(function (x) { return x != null; });
     var diffs = rows.map(function (r) { return r.diff; }).filter(function (x) { return x != null; });
     var pcts = rows.map(function (r) { return r.pct; }).filter(function (x) { return x != null; });
-    var up = diffs.filter(function (d) { return d > 0; }).length, down = diffs.filter(function (d) { return d < 0; }).length, same = diffs.length - up - down; // up = ความเสี่ยงเพิ่ม
+    var up = diffs.filter(function (d) { return d > 0; }).length, down = diffs.filter(function (d) { return d < 0; }).length, same = diffs.length - up - down; // up = คะแนนพฤติกรรมเพิ่ม (ดีขึ้น)
     var noPre = rows.length - pres.length;
     function k(label, val, sub, cls) { return '<div class="kpi ' + (cls || "") + '"><div class="k-l">' + label + '</div><div class="k-v">' + val + '</div><div class="k-s">' + (sub || "") + "</div></div>"; }
     $("#kpis").innerHTML =
       k("ผู้ตอบ (ตามตัวกรอง)", rows.length, "ทำครบ " + rows.filter(function (r) { return r.status === "ทำครบ"; }).length + " · รอทำหลังเรียน " + rows.filter(function (r) { return r.status !== "ทำครบ"; }).length + (noPre ? "<br>ไม่มีคะแนนก่อน " + noPre + " คน" : "")) +
-      k("คะแนนความเสี่ยงก่อน<br><small>3 เดือนที่ผ่านมา · 0–4</small>", pres.length ? f2(mean(pres)) : "—", pres.length ? "SD " + f2(sd(pres)) + " · n = " + pres.length : "", "before") +
-      k("คะแนนความเสี่ยงหลัง<br><small>1 สัปดาห์ที่ผ่านมา · 0–4</small>", posts.length ? f2(mean(posts)) : "—", posts.length ? "SD " + f2(sd(posts)) + " · n = " + posts.length : "", "after") +
+      k("คะแนนพฤติกรรมรวมก่อน<br><small>ก่อนเข้าร่วมโปรแกรม · 0–56</small>", pres.length ? f2(mean(pres)) : "—", pres.length ? "SD " + f2(sd(pres)) + " · n = " + pres.length : "", "before") +
+      k("คะแนนพฤติกรรมรวมหลัง<br><small>หลังเข้าร่วมโปรแกรม · 0–56</small>", posts.length ? f2(mean(posts)) : "—", posts.length ? "SD " + f2(sd(posts)) + " · n = " + posts.length : "", "after") +
       k("ผลต่างเฉลี่ย (หลัง − ก่อน)", diffs.length ? signed(mean(diffs), 2) : "—", groupPct(rows)) +
-      '<div class="kpi"><div class="k-l">ทิศทางความเสี่ยง</div><div class="dir"><span class="up">▼ ' + down + '</span><span class="same">● ' + same + '</span><span class="down">▲ ' + up + "</span></div>" +
-      '<div class="k-s">ลดลง / เท่าเดิม / เพิ่มขึ้น' + (diffs.length ? " (n = " + diffs.length + ")" : "") + "</div></div>";
+      '<div class="kpi"><div class="k-l">ทิศทางพฤติกรรม</div><div class="dir"><span class="up">▲ ' + up + '</span><span class="same">● ' + same + '</span><span class="down">▼ ' + down + "</span></div>" +
+      '<div class="k-s">ดีขึ้น / เท่าเดิม / แย่ลง' + (diffs.length ? " (n = " + diffs.length + ")" : "") + "</div></div>";
+  }
+  function kpi(label, val, sub, cls) { return '<div class="kpi ' + (cls || "") + '"><div class="k-l">' + label + '</div><div class="k-v">' + val + '</div><div class="k-s">' + (sub || "") + "</div></div>"; }
+  function renderHlKpis() {
+    var rows = ST.filtered, max = D.hlpre.scoreMax;
+    var pres = rows.map(function (r) { return r.hlPre.mean; }).filter(function (x) { return x != null; });
+    var posts = rows.map(function (r) { return r.hlPost.mean; }).filter(function (x) { return x != null; });
+    var pairs = rows.filter(function (r) { return r.hlDiff != null; });
+    var diffs = pairs.map(function (r) { return r.hlDiff; });
+    var up = diffs.filter(function (d) { return d > 0; }).length, down = diffs.filter(function (d) { return d < 0; }).length, same = diffs.length - up - down;
+    var pct = "";
+    if (pairs.length) {
+      var mPre = mean(pairs.map(function (r) { return r.hlPre.mean; })), mPost = mean(pairs.map(function (r) { return r.hlPost.mean; }));
+      if (mPre) pct = "ร้อยละการเปลี่ยนแปลงของกลุ่ม " + signed((mPost - mPre) / mPre * 100, 1) + "%";
+    }
+    $("#hlKpis").innerHTML =
+      kpi("ความรอบรู้ก่อน<br><small>ก่อนเข้าร่วมโปรแกรม · 1–" + max + "</small>", pres.length ? f2(mean(pres)) : "—", pres.length ? "SD " + f2(sd(pres)) + " · n = " + pres.length : "", "before") +
+      kpi("ความรอบรู้หลัง<br><small>หลังเข้าร่วมโปรแกรม · 1–" + max + "</small>", posts.length ? f2(mean(posts)) : "—", posts.length ? "SD " + f2(sd(posts)) + " · n = " + posts.length : "", "after") +
+      kpi("ผลต่างความรอบรู้เฉลี่ย (หลัง − ก่อน)", diffs.length ? signed(mean(diffs), 2) : "—", pct) +
+      '<div class="kpi"><div class="k-l">ทิศทางความรอบรู้</div><div class="dir"><span class="up">▲ ' + up + '</span><span class="same">● ' + same + '</span><span class="down">▼ ' + down + "</span></div>" +
+      '<div class="k-s">เพิ่มขึ้น / เท่าเดิม / ลดลง' + (diffs.length ? " (n = " + diffs.length + ")" : "") + "</div></div>";
   }
 
   /* ======================================================
@@ -393,11 +429,20 @@
      ====================================================== */
   function fmtP(p) { if (p == null) return "—"; return p < 0.001 ? "< .001" : p.toFixed(3).replace(/^0/, ""); }
   function renderStats() {
-    var t = pairedT(ST.filtered), box = $("#stats");
+    renderTTest($("#stats"), pairedT(ST.filtered, "pre", "post", "total"), {
+      pre: "ก่อนเข้าร่วมโปรแกรม", post: "หลังเข้าร่วมโปรแกรม", what: "คะแนนพฤติกรรมรวม", note: ""
+    });
+  }
+  function renderHlStats() {
+    renderTTest($("#hlStats"), pairedT(ST.filtered, "hlPre", "hlPost"), {
+      pre: "ก่อนเข้าร่วมโปรแกรม", post: "หลังเข้าร่วมโปรแกรม", what: "คะแนนความรอบรู้ด้านสุขภาพ", note: ""
+    });
+  }
+  function renderTTest(box, t, L) {
     if (t.n < 2) { box.innerHTML = '<div class="empty"><strong>ข้อมูลไม่พอ</strong>ต้องมีผู้ที่มีคะแนนทั้งก่อนและหลังอย่างน้อย 2 คน</div>'; return; }
     var html = '<table class="stat-tbl"><thead><tr><th></th><th>n</th><th>Mean</th><th>SD</th></tr></thead><tbody>' +
-      "<tr><td>ก่อน (พฤติกรรม 3 เดือนที่ผ่านมา)</td><td>" + t.n + "</td><td>" + f2(t.preM) + "</td><td>" + f2(t.preSD) + "</td></tr>" +
-      "<tr><td>หลัง (พฤติกรรม 1 สัปดาห์ที่ผ่านมา)</td><td>" + t.n + "</td><td>" + f2(t.postM) + "</td><td>" + f2(t.postSD) + "</td></tr>" +
+      "<tr><td>" + L.pre + "</td><td>" + t.n + "</td><td>" + f2(t.preM) + "</td><td>" + f2(t.preSD) + "</td></tr>" +
+      "<tr><td>" + L.post + "</td><td>" + t.n + "</td><td>" + f2(t.postM) + "</td><td>" + f2(t.postSD) + "</td></tr>" +
       "<tr><td>ผลต่าง (หลัง − ก่อน)</td><td>" + t.n + "</td><td>" + signed(t.dM, 2) + "</td><td>" + f2(t.dSD) + "</td></tr></tbody></table>";
     if (t.t == null) {
       html += '<p class="interp">ทุกคนมีผลต่างเท่ากัน (SD ของผลต่าง = 0) จึงคำนวณ t-test ไม่ได้</p>';
@@ -407,9 +452,9 @@
         "<div><span>p (สองหาง)</span><strong>" + fmtP(t.p) + "</strong></div><div><span>Cohen's d<sub>z</sub></span><strong>" + t.dz.toFixed(2) + "</strong></div></div>" +
         '<p class="muted small" style="margin-top:8px">95% CI ของผลต่างเฉลี่ย: ' + signed(t.ciLo, 2) + " ถึง " + signed(t.ciHi, 2) + "</p>" +
         '<p class="interp' + (sig ? " sig" : "") + '">' + (sig
-          ? "คะแนนพฤติกรรมเสี่ยงหลังเรียน" + (t.dM > 0 ? "สูงกว่า" : "ต่ำกว่า") + "ก่อนเรียนอย่างมีนัยสำคัญทางสถิติที่ระดับ .05"
-          : "คะแนนพฤติกรรมเสี่ยงก่อนและหลังเรียนไม่แตกต่างกันอย่างมีนัยสำคัญทางสถิติที่ระดับ .05") +
-        " · หมายเหตุ: ก่อนเรียนถามย้อนหลัง 3 เดือน หลังเรียนถามย้อนหลัง 1 สัปดาห์ (ห่างกันอย่างน้อย 7 วัน)</p>";
+          ? L.what + "หลังเรียน" + (t.dM > 0 ? "สูงกว่า" : "ต่ำกว่า") + "ก่อนเรียนอย่างมีนัยสำคัญทางสถิติที่ระดับ .05"
+          : L.what + "ก่อนและหลังเรียนไม่แตกต่างกันอย่างมีนัยสำคัญทางสถิติที่ระดับ .05") +
+        L.note + "</p>";
     }
     box.innerHTML = html;
   }
@@ -438,13 +483,27 @@
       return hbarGroup(c.label, "", c.pre, c.post, max, function (v) { return v + " คน"; });
     }).join("") : '<div class="empty">ไม่มีข้อมูลตามตัวกรอง</div>';
   }
+  function renderHlLevelChart() {
+    var rows = ST.filtered;
+    var counts = D.hlLevels.map(function (lv) {
+      return {
+        label: lv.label,
+        pre: rows.filter(function (r) { return r.hlPre.level && r.hlPre.level.key === lv.key; }).length,
+        post: rows.filter(function (r) { return r.hlPost.level && r.hlPost.level.key === lv.key; }).length
+      };
+    });
+    var max = Math.max.apply(null, counts.map(function (c) { return Math.max(c.pre, c.post); }).concat([1]));
+    $("#hlLevelChart").innerHTML = rows.length ? counts.map(function (c) {
+      return hbarGroup(c.label, "", c.pre, c.post, max, function (v) { return v + " คน"; });
+    }).join("") : '<div class="empty">ไม่มีข้อมูลตามตัวกรอง</div>';
+  }
   function renderFacultyChart() {
     var by = {};
     ST.filtered.forEach(function (r) {
       var k = r.faculty || "ไม่ระบุ";
       (by[k] = by[k] || { n: 0, pre: [], post: [] }).n++;
-      if (r.pre.mean != null) by[k].pre.push(r.pre.mean);
-      if (r.post.mean != null) by[k].post.push(r.post.mean);
+      if (r.pre.total != null) by[k].pre.push(r.pre.total);
+      if (r.post.total != null) by[k].post.push(r.post.total);
     });
     var keys = Object.keys(by).sort(function (a, b) {
       var ia = D.faculties.indexOf(a), ib = D.faculties.indexOf(b);
@@ -452,7 +511,7 @@
     });
     $("#facultyChart").innerHTML = keys.length ? keys.map(function (k) {
       var g = by[k];
-      return hbarGroup(k, "n = " + g.n, g.pre.length ? mean(g.pre) : null, g.post.length ? mean(g.post) : null, 4, function (v) { return v.toFixed(2); });
+      return hbarGroup(k, "n = " + g.n, g.pre.length ? mean(g.pre) : null, g.post.length ? mean(g.post) : null, D.pre.items.length * D.scoreMax, function (v) { return v.toFixed(1); });
     }).join("") : '<div class="empty">ไม่มีข้อมูลตามตัวกรอง</div>';
   }
 
@@ -481,18 +540,21 @@
 
   var COLS = [
     { key: "started", label: "วันเวลาเข้าทำ", get: function (r) { return r.started; }, show: function (r) { return fmtTH(r.started); } },
-    { key: "id", label: "รหัสผู้ตอบ", get: function (r) { return r.id; }, show: function (r) { return esc(r.id) + (r.nonUbu ? ' <span class="tag">NON-UBU</span>' : ""); } },
+    { key: "id", label: "รหัสผู้ตอบ", get: function (r) { return r.id; }, show: function (r) { return esc(r.id); } },
     { key: "status", label: "สถานะ", get: function (r) { return r.status; }, show: function (r) { return r.status === "ทำครบ" ? '<span class="st done">ทำครบ</span>' : '<span class="st wait">รอหลังเรียน</span>'; } },
     { key: "faculty", label: "คณะ", get: function (r) { return r.faculty; }, show: function (r) { return esc(r.faculty); } },
     { key: "year", label: "ชั้นปี", get: function (r) { return r.year; }, show: function (r) { return esc(r.year); } },
     { key: "gender", label: "เพศ", get: function (r) { return r.gender; }, show: function (r) { return esc(r.gender); } },
-    { key: "pre", label: "ก่อน <small>(พฤติกรรม 3 ด.)</small>", num: true, get: function (r) { return r.pre.mean; }, show: function (r) { return f2(r.pre.mean) + lvTag(r.pre.level); } },
-    { key: "post", label: "หลัง <small>(1 สัปดาห์)</small>", num: true, get: function (r) { return r.post.mean; }, show: function (r) { return f2(r.post.mean) + lvTag(r.post.level); } },
-    { key: "diff", label: "ผลต่าง", num: true, get: function (r) { return r.diff; }, show: function (r) { return dirSpan(r.diff, signed(r.diff, 2)); } },
+    { key: "hlPre", label: "ความรอบรู้ก่อน <small>(1–5)</small>", num: true, get: function (r) { return r.hlPre.mean; }, show: function (r) { return f2(r.hlPre.mean) + lvTag(r.hlPre.level); } },
+    { key: "hlPost", label: "ความรอบรู้หลัง", num: true, get: function (r) { return r.hlPost.mean; }, show: function (r) { return f2(r.hlPost.mean) + lvTag(r.hlPost.level); } },
+    { key: "pre", label: "พฤติกรรมก่อน <small>(รวม 0–56)</small>", num: true, get: function (r) { return r.pre.total; }, show: function (r) { return (r.pre.total == null ? "—" : r.pre.total) + lvTag(r.pre.level); } },
+    { key: "post", label: "พฤติกรรมหลัง", num: true, get: function (r) { return r.post.total; }, show: function (r) { return (r.post.total == null ? "—" : r.post.total) + lvTag(r.post.level); } },
+    { key: "diff", label: "ผลต่าง", num: true, get: function (r) { return r.diff; }, show: function (r) { return dirSpan(r.diff, signed(r.diff, 0)); } },
     { key: "pct", label: "ร้อยละเปลี่ยนแปลง", num: true, get: function (r) { return r.pct; }, show: function (r) { return dirSpan(r.pct, r.pct == null ? "—" : signed(r.pct, 1) + "%"); } }
   ];
   function lvTag(l) { return l ? '<span class="lv ' + l.key + '">' + l.label + "</span>" : ""; }
-  function dirSpan(v, txt) { if (v == null) return '<span class="same">—</span>'; return '<span class="' + (v < 0 ? "up" : v > 0 ? "down" : "same") + '">' + txt + "</span>"; } // ความเสี่ยงลด = สีเขียว
+  function dirSpan(v, txt) { if (v == null) return '<span class="same">—</span>'; return '<span class="' + (v > 0 ? "up" : v < 0 ? "down" : "same") + '">' + txt + "</span>"; } // คะแนนเพิ่ม = ดีขึ้น = สีเขียว
+  function hlDirSpan(v, txt) { return dirSpan(v, txt); } // ความรอบรู้เพิ่ม = สีเขียว
 
   function sortRows() {
     var col = COLS.filter(function (c) { return c.key === ST.sort.key; })[0], dir = ST.sort.dir;
@@ -565,23 +627,31 @@
   /* ======================================================
      รายละเอียดรายคน
      ====================================================== */
-  function rawLabel(v) {
-    if (v === "SKIP") return "ข้าม (ไม่มีเพศสัมพันธ์)";
-    if (v === "NA") return "ไม่เกี่ยวข้อง";
-    var s = D.scale.filter(function (x) { return String(x.value) === String(v); })[0];
+  function rawLabel(v, scale) {
+    var s = (scale || D.scale).filter(function (x) { return String(x.value) === String(v); })[0];
     return s ? v + " · " + s.label : "—";
   }
   function openDetail(id) {
     var r = ST.rows.filter(function (x) { return x.id === id; })[0]; if (!r) return;
     function kv(l, v) { return "<div><span>" + l + "</span><strong>" + (v === "" || v == null ? "—" : v) + "</strong></div>"; }
-    function answers(kind) {
-      var set = D[kind], sc = r[kind];
-      return '<h3 style="font-size:1rem;margin-top:6px">' + set.title + ' <small class="muted">(' + (kind === "pre" ? "พฤติกรรม 3 เดือนที่ผ่านมา" : "พฤติกรรม 1 สัปดาห์ที่ผ่านมา") + ')</small></h3>' +
-        '<p class="small">' + esc(set.screen.text) + ": <strong>" + esc((kind === "pre" ? r.preSex : r.postSex) || "—") + "</strong></p>" +
+    function hlAnswers(kind) {
+      var set = D[kind], sc = r[kind === "hlpre" ? "hlPre" : "hlPost"];
+      return '<h3 style="font-size:1rem;margin-top:6px">' + set.title + "</h3>" +
         '<table class="ans-tbl"><thead><tr><th>ข้อ</th><th>คำตอบดิบ</th><th>คะแนน</th></tr></thead><tbody>' +
         set.items.map(function (it, i) {
           var s = sc.scores[it.id];
-          return "<tr><td>" + (i + 1) + ". " + esc(it.text) + (it.dir === "-" ? '<span class="rev">ข้อพฤติกรรมเสี่ยง · คะแนน = คำตอบ</span>' : '<span class="rev ok">ข้อพฤติกรรมป้องกัน · คะแนน = 4 − คำตอบ</span>') + '</td><td class="num">' + esc(rawLabel(r.raw[it.id + "_raw"])) + '</td><td class="num">' + (s == null ? "—" : s) + "</td></tr>";
+          return "<tr><td>" + (i + 1) + ". " + esc(it.text) + (it.rev ? '<span class="rev">ข้อทางลบ · คะแนน = ' + (set.scoreMax + 1) + ' − คำตอบ</span>' : "") + '</td><td class="num">' + esc(rawLabel(r.raw[it.id + "_raw"], set.scale)) + '</td><td class="num">' + (s == null ? "—" : s) + "</td></tr>";
+        }).join("") +
+        (set.hl ? '<tr><td><strong>คะแนนเฉลี่ย</strong></td><td class="num">n = ' + sc.n + '</td><td class="num"><strong>' + f2(sc.mean) + "</strong>" + lvTag(sc.level) + "</td></tr>"
+          : '<tr><td><strong>คะแนนรวม (0–' + set.items.length * D.scoreMax + ')</strong></td><td class="num">n = ' + sc.n + '</td><td class="num"><strong>' + (sc.total == null ? "—" : sc.total) + "</strong>" + lvTag(sc.level) + "</td></tr>") + "</tbody></table>";
+    }
+    function answers(kind) {
+      var set = D[kind], sc = r[kind];
+      return '<h3 style="font-size:1rem;margin-top:6px">' + esc(set.title) + "</h3>" +
+        '<table class="ans-tbl"><thead><tr><th>ข้อ</th><th>คำตอบดิบ</th><th>คะแนน</th></tr></thead><tbody>' +
+        set.items.map(function (it, i) {
+          var s = sc.scores[it.id];
+          return "<tr><td>" + (i + 1) + ". " + esc(it.text) + (it.dir === "-" ? '<span class="rev">ข้อพฤติกรรมเสี่ยง · คะแนน = 4 − คำตอบ</span>' : '<span class="rev ok">ข้อพฤติกรรมป้องกัน · คะแนน = คำตอบ</span>') + '</td><td class="num">' + esc(rawLabel(r.raw[it.id + "_raw"])) + '</td><td class="num">' + (s == null ? "—" : s) + "</td></tr>";
         }).join("") +
         '<tr><td><strong>คะแนนเฉลี่ย</strong></td><td class="num">n = ' + sc.n + '</td><td class="num"><strong>' + f2(sc.mean) + "</strong>" + lvTag(sc.level) + "</td></tr></tbody></table>";
     }
@@ -589,13 +659,13 @@
     $("#detailBody").innerHTML =
       '<div class="kv">' +
       kv("วันเวลาเข้าทำ", fmtTH(r.started)) + kv("ทำเสร็จ", fmtTH(r.finished)) + kv("ใช้เวลาครั้งที่ 1", r.duration == null ? "" : r.duration.toFixed(1) + " นาที") +
-      kv("นักศึกษา ม.อุบลฯ", esc(r.isUbu) + (r.nonUbu ? ' <span class="tag">NON-UBU</span>' : "")) + kv("เพศ", esc(r.gender)) + kv("ชั้นปี", esc(r.year)) +
-      kv("คณะ", esc(r.faculty)) + kv("แหล่งข้อมูลเรื่องโรคติดต่อทางเพศสัมพันธ์", esc(r.prior)) + kv("เคยมีเพศสัมพันธ์", esc(r.sex)) +
-      kv("ผลต่าง (หลัง − ก่อน)", dirSpan(r.diff, signed(r.diff, 2))) + kv("ร้อยละการเปลี่ยนแปลง", dirSpan(r.pct, r.pct == null ? "—" : signed(r.pct, 1) + "%")) +
+      infoCols().filter(function (c) { return !/^src\d+$/.test(c[0]); }).map(function (c) { return kv(esc(c[1]), esc(c[2](r))); }).join("") +
+      kv("ผลต่างความรอบรู้ (หลัง − ก่อน)", hlDirSpan(r.hlDiff, signed(r.hlDiff, 2))) + kv("ร้อยละการเปลี่ยนแปลงความรอบรู้", hlDirSpan(r.hlPct, r.hlPct == null ? "—" : signed(r.hlPct, 1) + "%")) +
+      kv("ผลต่างคะแนนพฤติกรรมรวม (หลัง − ก่อน)", dirSpan(r.diff, signed(r.diff, 0))) + kv("ร้อยละการเปลี่ยนแปลงพฤติกรรม", dirSpan(r.pct, r.pct == null ? "—" : signed(r.pct, 1) + "%")) +
       kv("อ่านเนื้อหา", r.topics == null ? "" : r.topics + " / " + D.sections.length + " หัวข้อ") +
       kv("สถานะ", esc(r.status)) + kv("อ่านเนื้อหาครบ (จบครั้งที่ 1)", fmtTH(r.contentDone)) + kv("ปลดล็อกหลังเรียน", fmtTH(r.unlockAt)) +
       kv("ทำหลังเรียน", fmtTH(r.postDone)) + kv("เว้นห่าง", r.gap == null ? "" : r.gap.toFixed(1) + " วัน") + kv("อีเมลเตือน", esc(r.emailStatus)) +
-      "</div>" + answers("pre") + (r.status === "ทำครบ" ? answers("post") : '<p class="muted">ยังไม่ได้ทำแบบประเมินหลังเรียน</p>') +
+      "</div>" + hlAnswers("hlpre") + answers("pre") + (r.status === "ทำครบ" ? hlAnswers("hlpost") + answers("post") : '<p class="muted">ยังไม่ได้ทำแบบประเมินหลังเรียน</p>') +
       '<h3 style="font-size:1rem;margin-top:6px">ความพึงพอใจ</h3><table class="ans-tbl"><tbody>' +
       D.satisfaction.map(function (q) { var v = r.sat[q.id]; return "<tr><td>" + esc(q.text) + '</td><td class="num">' + (v == null ? "—" : "★".repeat(v) + " " + v) + "</td></tr>"; }).join("") +
       "<tr><td>ข้อเสนอแนะ</td><td>" + (r.satComment ? esc(r.satComment) : "—") + "</td></tr></tbody></table>";
@@ -613,6 +683,19 @@
   /* ======================================================
      ส่งออก CSV
      ====================================================== */
+  // คอลัมน์ข้อมูลส่วนบุคคล [คอลัมน์, ชื่อไทย, ค่า] ตาม D.infoFields (รวม src1 … และ <name>_other)
+  function infoCols() {
+    var cols = [];
+    D.infoFields.forEach(function (f) {
+      var label = f.label.replace(/^\d+\.\s*/, "").replace(/\s*\(เลือกได้.*\)$/, "");
+      cols.push([f.name, label, function (r) { var v = r.raw[f.name]; return v == null ? "" : v; }]);
+      if (f.type === "multi") f.options.forEach(function (o, i) {
+        cols.push(["src" + (i + 1), label + ": " + o + " (1/0)", function (r) { var v = r.raw["src" + (i + 1)]; return v == null ? "" : v; }]);
+      });
+      if (f.other) cols.push([f.name + "_other", label + " (อื่น ๆ ระบุ)", function (r) { return r.raw[f.name + "_other"] || ""; }]);
+    });
+    return cols;
+  }
   function buildExportCols() {
     var cols = [
       ["response_id", "รหัสผู้ตอบ", function (r) { return r.id; }],
@@ -625,37 +708,47 @@
       ["email_reminder", "สถานะอีเมลเตือน", function (r) { return r.emailStatus; }],
       ["started_at_iso", "วันเวลาเข้าทำ (ISO, UTC)", function (r) { return r.started; }],
       ["duration_min", "ระยะเวลาครั้งที่ 1 (นาที)", function (r) { return r.duration; }],
-      ["is_ubu_student", "เป็นนักศึกษา ม.อุบลฯ", function (r) { return r.isUbu; }],
-      ["flag_non_ubu", "ป้ายคัดออก", function (r) { return r.nonUbu ? "NON-UBU" : ""; }],
-      ["gender", "เพศ", function (r) { return r.gender; }],
-      ["year", "ชั้นปี", function (r) { return r.year; }],
-      ["faculty", "คณะ", function (r) { return r.faculty; }],
-      ["info_sources", "แหล่งข้อมูลเรื่องโรคติดต่อทางเพศสัมพันธ์", function (r) { return r.prior; }],
-      ["ever_sex", "เคยมีเพศสัมพันธ์", function (r) { return r.sex; }],
       ["consent", "การยินยอม", function (r) { return r.consent; }]
-    ];
+    ].concat(infoCols());
+    // แบบประเมินความรอบรู้ด้านสุขภาพ (แยกจากคะแนนพฤติกรรม)
+    [["hlpre", "hlPre", "hl_pre", "ความรอบรู้ก่อน"], ["hlpost", "hlPost", "hl_post", "ความรอบรู้หลัง"]].forEach(function (k) {
+      var kind = k[0], key = k[1], prefix = k[2], tag = k[3], set = D[kind];
+      set.items.forEach(function (it, i) {
+        cols.push([it.id + "_raw", tag + " ข้อ " + (i + 1) + " คำตอบดิบ 1–" + set.scoreMax + (it.rev ? " (ข้อทางลบ)" : ""), function (r) { var v = r.raw[it.id + "_raw"]; return v == null ? "" : v; }]);
+      });
+      set.items.forEach(function (it, i) {
+        cols.push([it.id + "_score", tag + " ข้อ " + (i + 1) + " คะแนน" + (it.rev ? " (กลับคะแนนแล้ว)" : ""), function (r) { var s = r[key].scores[it.id]; return s == null ? "" : s; }]);
+      });
+      cols.push([prefix + "_n_answered", tag + " จำนวนข้อที่ตอบ", function (r) { return r[key].n; }]);
+      cols.push([prefix + "_total", "คะแนน" + tag + " รวม", function (r) { return r[key].total; }]);
+      cols.push([prefix + "_mean", "คะแนน" + tag + " เฉลี่ย (1–" + set.scoreMax + ")", function (r) { return r[key].mean; }]);
+      cols.push([prefix + "_level", "ระดับ" + tag, function (r) { return r[key].level ? r[key].level.label : ""; }]);
+    });
+    cols.push(["hl_score_diff", "ผลต่างคะแนนความรอบรู้ (หลัง − ก่อน, บวก = รอบรู้เพิ่มขึ้น)", function (r) { return r.hlDiff; }]);
+    cols.push(["hl_pct_change", "ร้อยละการเปลี่ยนแปลงความรอบรู้", function (r) { return r.hlPct; }]);
+    cols.push(["hl_change_direction", "ทิศทางการเปลี่ยนแปลงความรอบรู้", function (r) { return r.hlDir; }]);
+    // แบบประเมินพฤติกรรม
     ["pre", "post"].forEach(function (kind) {
       var tag = kind === "pre" ? "ก่อน" : "หลัง";
-      cols.push([kind + "_sex", tag + " มีเพศสัมพันธ์ในช่วงที่ถาม (" + (kind === "pre" ? "3 เดือน" : "1 สัปดาห์") + ")", function (r) { return kind === "pre" ? r.preSex : r.postSex; }]);
       D[kind].items.forEach(function (it, i) {
-        cols.push([it.id + "_raw", tag + " ข้อ " + (i + 1) + " คำตอบดิบ 0–4" + (it.dir === "-" ? " (ข้อเสี่ยง)" : " (ข้อป้องกัน)") + (it.sex ? " [ข้ามได้]" : ""), function (r) { var v = r.raw[it.id + "_raw"]; return v == null ? "" : v; }]);
+        cols.push([it.id + "_raw", tag + " ข้อ " + (i + 1) + " คำตอบดิบ 0–4" + (it.dir === "-" ? " (ข้อเสี่ยง)" : " (ข้อป้องกัน)"), function (r) { var v = r.raw[it.id + "_raw"]; return v == null ? "" : v; }]);
       });
       D[kind].items.forEach(function (it, i) {
-        cols.push([it.id + "_score", tag + " ข้อ " + (i + 1) + " คะแนนความเสี่ยง" + (it.dir === "-" ? "" : " (กลับคะแนนแล้ว)"), function (r) { var s = r[kind].scores[it.id]; return s == null ? "" : s; }]);
+        cols.push([it.id + "_score", tag + " ข้อ " + (i + 1) + " คะแนนพฤติกรรม" + (it.dir === "-" ? " (ข้อเสี่ยง กลับคะแนนแล้ว)" : ""), function (r) { var s = r[kind].scores[it.id]; return s == null ? "" : s; }]);
       });
       if (kind === "pre") {
         cols.push(["pre_n_answered", "ก่อน จำนวนข้อที่นำมาคิดคะแนน", function (r) { return r.pre.n; }]);
-        cols.push(["pre_total", "คะแนนความเสี่ยงรวมก่อน", function (r) { return r.pre.total; }]);
-        cols.push(["pre_mean", "คะแนนความเสี่ยงเฉลี่ยก่อน (3 เดือนที่ผ่านมา)", function (r) { return r.pre.mean; }]);
+        cols.push(["pre_total", "คะแนนพฤติกรรมรวมก่อน (0–56)", function (r) { return r.pre.total; }]);
+        cols.push(["pre_mean", "คะแนนพฤติกรรมเฉลี่ยรายข้อก่อน (0–4)", function (r) { return r.pre.mean; }]);
         cols.push(["pre_level", "ระดับก่อน", function (r) { return r.pre.level ? r.pre.level.label : ""; }]);
       } else {
         cols.push(["post_n_answered", "หลัง จำนวนข้อที่นำมาคิดคะแนน", function (r) { return r.post.n; }]);
-        cols.push(["post_total", "คะแนนความเสี่ยงรวมหลัง", function (r) { return r.post.total; }]);
-        cols.push(["post_mean", "คะแนนความเสี่ยงเฉลี่ยหลัง (1 สัปดาห์ที่ผ่านมา)", function (r) { return r.post.mean; }]);
+        cols.push(["post_total", "คะแนนพฤติกรรมรวมหลัง (0–56)", function (r) { return r.post.total; }]);
+        cols.push(["post_mean", "คะแนนพฤติกรรมเฉลี่ยรายข้อหลัง (0–4)", function (r) { return r.post.mean; }]);
         cols.push(["post_level", "ระดับหลัง", function (r) { return r.post.level ? r.post.level.label : ""; }]);
       }
     });
-    cols.push(["score_diff", "ผลต่างคะแนนความเสี่ยง (หลัง − ก่อน, ติดลบ = เสี่ยงลดลง)", function (r) { return r.diff; }]);
+    cols.push(["score_diff", "ผลต่างคะแนนพฤติกรรมรวม (หลัง − ก่อน, บวก = ดีขึ้น)", function (r) { return r.diff; }]);
     cols.push(["pct_change", "ร้อยละการเปลี่ยนแปลง", function (r) { return r.pct; }]);
     cols.push(["change_direction", "ทิศทางการเปลี่ยนแปลง", function (r) { return r.dir; }]);
     cols.push(["content_topics_read", "จำนวนหัวข้อเนื้อหาที่อ่าน", function (r) { return r.topics; }]);
@@ -672,7 +765,7 @@
   }
   $("#exportBtn").addEventListener("click", function () {
     $("#scopeFiltered").textContent = "เฉพาะที่กรองอยู่ (" + ST.filtered.length + " รายการ)";
-    $("#scopeAll").textContent = "ทั้งหมด (" + ST.rows.length + " รายการ รวม NON-UBU)";
+    $("#scopeAll").textContent = "ทั้งหมด (" + ST.rows.length + " รายการ)";
     openDlg($("#exportDlg"));
   });
   $("#doExport").addEventListener("click", function () {

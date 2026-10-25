@@ -635,3 +635,22 @@ body.on-home .deco { display: none; }
 .crit td:first-child { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .crit tr.is-mine td { background: #FBF6EE; font-weight: 700; }
 .crit tr.is-mine td:last-child { color: var(--btn); }
+
+/* ---------- สถานะการอ่าน: อ่านแล้ว = สีเขียว · ยังไม่อ่าน = สีขาว · กำลังเปิด = เขียวเข้ม ---------- */
+.tab.is-read { background: #DCE8D0; border-color: #9CAD8C; color: var(--ink); }
+.tab.is-read .done { background: #5E6B4B; color: #fff; }
+.tab[aria-selected="true"] { background: var(--green-dark); border-color: var(--green-dark); color: #fff; box-shadow: 0 0 0 3px #DCE8D0; }
+.read-alert { flex-basis: 100%; order: 3; background: #FBEDEF; border: 1.5px solid var(--danger); border-radius: var(--radius-sm); padding: 14px 18px; color: var(--ink); }
+.read-alert strong { display: block; color: var(--danger); font-family: var(--font-head); font-size: 1.08rem; }
+.read-alert p { margin: 6px 0 4px; }
+.read-alert ul { margin: 0; padding-left: 1.2em; }
+.read-alert .link { font-size: 1rem; text-align: left; }
+
+/* แถบ 6 ด้าน: ทำครบแล้ว = สีชมพู (คนละสีกับหน้าเนื้อหา) */
+.sk-step.is-done .sk-dot { background: var(--pink-light); border-color: var(--pink); color: var(--ink); }
+.sk-step.is-done .sk-step-t { color: var(--ink); }
+.sk-step[aria-selected="true"] .sk-dot { background: var(--btn); border-color: var(--btn); color: #fff; box-shadow: 0 0 0 4px var(--pink-light); }
+
+/* ที่มาภาพใต้รูปประกอบเนื้อหา */
+.photo-credit { display: block; margin-top: 4px; font-size: .82rem; color: var(--ink-soft); word-break: break-word; }
+.photo-credit a { color: inherit; }

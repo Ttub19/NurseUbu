@@ -3,7 +3,7 @@
 
   var CFG = window.APP_CONFIG || {};
   var D = window.APP_DATA;
-  var STEPS = ["home", "consent", "info", "hlpre", "pre", "content", "skills", "wait", "hlpost", "post", "summary", "thanks", "ack"];
+  var STEPS = ["home", "consent", "info", "hlpre", "pre", "content", "skills", "hlpost", "wait", "post", "summary", "thanks", "ack"];
   var ASSESS = ["hlpre", "pre", "hlpost", "post"];
   var STORE_KEY = "sexed_state_v4";
   var LOCK = CFG.LOCK_POST === true; // ค่าเริ่มต้น = ปิดล็อก ทำแบบประเมินหลังเรียนได้ทันที
@@ -163,8 +163,8 @@
     if (!S.info.consent_final) return "info";
     if (!S.hlPreCompleted) return "hlpre";
     if (!S.preCompleted) return "pre";
-    if (!S.stage1Saved) return allTopicsRead() ? "skills" : "content";
-    if (!S.postSaved) return !unlocked() ? "wait" : S.hlPostCompleted ? "post" : "hlpost";
+    if (!S.stage1Saved) return !allTopicsRead() ? "content" : !allSkillsDone() ? "skills" : "hlpost";
+    if (!S.postSaved) return !unlocked() ? "wait" : "post";
     return S.view === "thanks" || S.view === "ack" ? S.view : "summary";
   }
 
@@ -174,11 +174,15 @@
     // ด่านตรวจลำดับ
     if (view === "hlpre" && S.hlPreCompleted) view = "pre";
     if (view === "pre" && S.preCompleted) view = "content";
-    if (view === "hlpost" || view === "post") {
-      if (!S.stage1Saved) { toast(!allTopicsRead() ? "กรุณาอ่านเนื้อหาให้ครบทุกหัวข้อก่อน" : allSkillsDone() ? "กรุณากดบันทึกท้ายหน้าความรอบรู้ 6 ด้านก่อน" : "กรุณาทำแบบฝึกทักษะให้ครบทั้ง 6 ด้านก่อน"); view = nextStep(); }
+    // ครั้งที่ 1: ความรอบรู้ (หลัง) ทำได้เมื่ออ่านเนื้อหาและทำ 6 ด้านครบ · ครั้งที่ 2: พฤติกรรม (หลัง) เมื่อครบ 7 วัน
+    if (view === "hlpost") {
+      if (S.stage1Saved) view = nextStep();
+      else if (!S.preCompleted || !allTopicsRead() || !allSkillsDone()) { toast(!allTopicsRead() ? "กรุณาอ่านเนื้อหาให้ครบทุกหัวข้อก่อน" : "กรุณาทำความรอบรู้ด้านสุขภาพให้ครบทั้ง 6 ด้านก่อน"); view = nextStep(); }
+    }
+    if (view === "post") {
+      if (!S.stage1Saved) { toast("กรุณาทำครั้งที่ 1 ให้ครบก่อน"); view = nextStep(); }
       else if (S.postSaved) view = "summary";
       else if (!unlocked()) view = "wait";
-      else view = S.hlPostCompleted ? "post" : "hlpost";
     }
     if (view === "skills" && !S.preCompleted) view = nextStep();
     if (view === "skills" && !S.stage1Saved && !allTopicsRead()) { toast("กรุณาอ่านเนื้อหาให้ครบทั้ง " + D.sections.length + " หัวข้อก่อน"); view = "content"; }
@@ -211,7 +215,7 @@
                 (k === "sources" && S.view === "sources");
       if (cur) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
-    var marks = [S.hlPreCompleted, S.preCompleted, S.stage1Saved, S.hlPostCompleted, S.postSaved, S.view === "thanks" || S.view === "ack"];
+    var marks = [S.hlPreCompleted, S.preCompleted, allTopicsRead() && S.preCompleted, S.stage1Saved, S.postSaved, S.view === "thanks" || S.view === "ack"];
     var steps = marks.filter(Boolean).length;
     $("#progressBar").style.width = (S.id ? 8 + steps * 92 / marks.length : 0) + "%";
     var start = $("#btnStart");
@@ -417,10 +421,10 @@
      ====================================================== */
   // ลำดับแบบประเมิน: ครั้งละ 2 ชุด (ความรอบรู้ → พฤติกรรม) ทุกข้อบังคับตอบ
   var ASSESS_META = {
-    hlpre: { step: "ขั้นที่ 3 · ครั้งที่ 1 · ชุดที่ 1 จาก 2", btn: "บันทึกและไปชุดที่ 2" },
-    pre: { step: "ขั้นที่ 4 · ครั้งที่ 1 · ชุดที่ 2 จาก 2", btn: "บันทึกและไปอ่านเนื้อหา" },
-    hlpost: { step: "ขั้นที่ 2 · ครั้งที่ 2 · ชุดที่ 1 จาก 2", btn: "บันทึกและไปชุดที่ 2" },
-    post: { step: "ขั้นที่ 3 · ครั้งที่ 2 · ชุดที่ 2 จาก 2", btn: "บันทึกและดูผลของฉัน" }
+    hlpre: { step: "ขั้นที่ 3 · ครั้งที่ 1 · ก่อนเข้าร่วมโปรแกรม ชุดที่ 1 จาก 2", btn: "บันทึกและไปชุดที่ 2" },
+    pre: { step: "ขั้นที่ 4 · ครั้งที่ 1 · ก่อนเข้าร่วมโปรแกรม ชุดที่ 2 จาก 2", btn: "บันทึกและไปอ่านเนื้อหา" },
+    hlpost: { step: "ขั้นที่ 7 · ครั้งที่ 1 · หลังศึกษาเนื้อหา", btn: "บันทึกและรับวันนัด" },
+    post: { step: "ขั้นที่ 2 · ครั้งที่ 2 · หลังเข้าร่วมโปรแกรม", btn: "บันทึกและดูผลของฉัน" }
   };
   function answered(v) { return v != null && v !== ""; }
   function renderAssess(kind) {
@@ -466,7 +470,7 @@
       if (bad) return focusBad(bad);
       if (kind === "hlpre") { S.hlPreCompleted = true; save(); return go("pre"); }
       if (kind === "pre") { S.preCompleted = true; save(); return go("content"); }
-      if (kind === "hlpost") { S.hlPostCompleted = true; save(); return go("post"); }
+      if (kind === "hlpost") { S.hlPostCompleted = true; save(); return submitStage1($('button[type="submit"]', form)); }
       submitStage2(form);
     });
   });
@@ -474,14 +478,14 @@
   /* ======================================================
      คะแนน
      ====================================================== */
-  // พฤติกรรม: คะแนนความเสี่ยง 0–4 ข้อป้องกัน = 4 − ความถี่, ข้อเสี่ยง = ความถี่ (คะแนนสูง = เสี่ยงมาก)
+  // พฤติกรรม: คะแนน 0–4 ข้อป้องกัน = ความถี่, ข้อเสี่ยง (dir "-") = 4 − ความถี่ (คะแนนสูง = พฤติกรรมดี) รวม 0–56
   // ความรอบรู้: คะแนน 1–5 ข้อทางบวก = คำตอบ, ข้อทางลบ (rev) = 6 − คำตอบ (คะแนนสูง = รอบรู้มาก)
   function itemScore(set, it, raw) {
     if (raw == null || raw === "") return null;
     var v = Number(raw);
     if (isNaN(v)) return null;
     if (set.hl) return it.rev ? set.scoreMax + 1 - v : v;
-    return it.dir === "-" ? v : D.scoreMax - v;
+    return it.dir === "-" ? D.scoreMax - v : v;
   }
   function calc(kind) {
     var set = D[kind], scores = {}, sum = 0, n = 0;
@@ -491,7 +495,7 @@
       if (s != null) { sum += s; n++; }
     });
     var mean = n ? Math.round((sum / n) * 100) / 100 : null;
-    return { scores: scores, mean: mean, n: n, total: sum, level: levelOf(mean, set.levels) };
+    return { scores: scores, mean: mean, n: n, total: sum, level: D.levelFor(set.levels || D.levels, mean, sum, n) };
   }
   function levelOf(mean, levels) {
     levels = levels || D.levels;
@@ -517,7 +521,7 @@
   function renderContent() {
     $("#tabs").innerHTML = D.sections.map(function (s, i) {
       var read = S.read.indexOf(s.id) > -1;
-      return '<button type="button" class="tab" role="tab" id="tab-' + s.id + '" aria-controls="topic" aria-selected="' + (i === S.topic) + '" tabindex="' + (i === S.topic ? 0 : -1) + '" data-i="' + i + '">' +
+      return '<button type="button" class="tab' + (read ? " is-read" : "") + '" role="tab" id="tab-' + s.id + '" aria-controls="topic" aria-selected="' + (i === S.topic) + '" tabindex="' + (i === S.topic ? 0 : -1) + '" data-i="' + i + '">' +
         '<span aria-hidden="true">' + s.icon + "</span>" + esc(s.title) + (read ? '<span class="done" aria-label="อ่านแล้ว">✓</span>' : "") + "</button>";
     }).join("");
     showTopic(S.topic, false);
@@ -536,11 +540,22 @@
       btn.disabled = false; btn.textContent = unlocked() ? "ทำแบบประเมินหลังเรียน" : "ดูวันนัดของฉัน";
       hint.textContent = unlocked() ? (LOCK ? "ครบ 7 วันแล้ว ทำแบบประเมินหลังเรียนได้เลย" : "ทำแบบประเมินหลังเรียนได้เลย") : "อ่านทบทวนได้ระหว่างรอครบ 7 วัน";
     } else {
-      btn.disabled = !all; btn.textContent = "อ่านครบแล้ว ไปเนื้อหาความรอบรู้ 6 ด้าน";
+      btn.disabled = false; btn.textContent = "อ่านครบแล้ว ไปเนื้อหาความรอบรู้ 6 ด้าน";
       hint.textContent = all ? "อ่านครบแล้ว กดปุ่มด้านล่างเพื่อไปศึกษาเนื้อหาและทำแบบฝึกทักษะความรอบรู้ด้านสุขภาพ 6 ด้าน" : "อ่านให้ครบทั้ง " + D.sections.length + " หัวข้อ แล้วกดปุ่มด้านล่างเพื่อไปเนื้อหาความรอบรู้ด้านสุขภาพ 6 ด้าน";
     }
     $("#btnToSkills").hidden = !(S.preCompleted && (all || S.stage1Saved));
   }
+
+  // อ่านเนื้อหาไม่ครบ: แจ้งเตือนพร้อมรายชื่อหัวข้อที่ยังไม่ได้อ่าน (กดชื่อเพื่อเปิดอ่านได้)
+  function showReadAlert() {
+    var left = D.sections.map(function (s, i) { return { s: s, i: i }; }).filter(function (x) { return S.read.indexOf(x.s.id) === -1; });
+    var box = $("#readAlert");
+    box.innerHTML = "<strong>คุณยังอ่านเนื้อหาไม่ครบ กรุณาอ่านเนื้อหาให้ครบ</strong><p>ยังไม่ได้อ่าน " + left.length + " หัวข้อ:</p><ul>" +
+      left.map(function (x) { return '<li><button type="button" class="link" data-topic="' + x.i + '">' + esc(x.s.title) + "</button></li>"; }).join("") + "</ul>";
+    box.hidden = false;
+    box.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  $("#readAlert").addEventListener("click", function (e) { var b = e.target.closest("[data-topic]"); if (b) showTopic(Number(b.getAttribute("data-topic")), true); });
 
   function showTopic(i, focus) {
     var s = D.sections[i];
@@ -550,7 +565,9 @@
     $$(".tab").forEach(function (t, j) {
       t.setAttribute("aria-selected", j === i);
       t.tabIndex = j === i ? 0 : -1;
-      if (D.sections[j] && S.read.indexOf(D.sections[j].id) > -1 && !$(".done", t)) t.insertAdjacentHTML("beforeend", '<span class="done" aria-label="อ่านแล้ว">✓</span>');
+      var isRead = D.sections[j] && S.read.indexOf(D.sections[j].id) > -1;
+      t.classList.toggle("is-read", !!isRead);
+      if (isRead && !$(".done", t)) t.insertAdjacentHTML("beforeend", '<span class="done" aria-label="อ่านแล้ว">✓</span>');
     });
     var v = (CFG.VIDEOS || {})[s.id];
     var video = v && v.id ? '<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(v.id) +
@@ -562,9 +579,11 @@
     var next = i < D.sections.length - 1 ? '<button type="button" class="btn btn-primary" data-topic="' + (i + 1) + '">' + esc(D.sections[i + 1].title) + " →</button>" : "";
     var topic = $("#topic");
     topic.setAttribute("aria-labelledby", "tab-" + s.id);
-    var photo = s.photo ? '<figure class="photo"><img src="' + s.photo.src + '" alt="' + esc(s.photo.alt) + '" loading="lazy"><figcaption>' + esc(s.photo.caption) + "</figcaption></figure>" : "";
+    var photo = s.photo ? '<figure class="photo"><img src="' + s.photo.src + '" alt="' + esc(s.photo.alt) + '" loading="lazy"><figcaption>' + esc(s.photo.caption) + (s.photo.credit ? '<span class="photo-credit">ที่มาภาพ: ' + esc(s.photo.credit) + (s.photo.creditUrl ? ' <a href="' + s.photo.creditUrl + '" target="_blank" rel="noopener">' + esc(s.photo.creditUrl.replace(/^https?:\/\//, "").split("/")[0]) + "</a>" : "") + "</span>" : "") + "</figcaption></figure>" : "";
     topic.innerHTML = '<h3><span aria-hidden="true">' + s.icon + "</span>" + esc(s.title) + "</h3>" + photo + s.html + fig + video + '<div class="topic-nav">' + prev + next + "</div>";
     updateContentFoot();
+    var ra = $("#readAlert");
+    if (!ra.hidden) { if (allTopicsRead()) ra.hidden = true; else { var li = $('[data-topic="' + i + '"]', ra); if (li) li.closest("li").remove(); } }
     if (focus) {
       var tab = $("#tab-" + s.id); if (tab) tab.scrollIntoView({ block: "nearest", inline: "center" });
       topic.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -598,7 +617,7 @@
   $("#btnToPost").addEventListener("click", function () {
     if (!S.preCompleted) return go(S.id ? nextStep() : "consent");
     if (S.stage1Saved) return go(nextStep());
-    if (!allTopicsRead()) return toast("กรุณาอ่านเนื้อหาให้ครบทุกหัวข้อก่อน");
+    if (!allTopicsRead()) return showReadAlert();
     go("skills");
   });
   $("#btnToSkills").addEventListener("click", function () { go("skills"); });
@@ -670,7 +689,7 @@
       if (!answered) fwd = '<button type="button" class="btn btn-primary" disabled>เลือกคำตอบก่อน</button>';
       else if (S.skillQi < d.quiz.length - 1) fwd = '<button type="button" class="btn btn-primary" data-qi="' + (S.skillQi + 1) + '">ข้อถัดไป →</button>';
       else if (i < last) fwd = '<button type="button" class="btn btn-primary" data-skill="' + (i + 1) + '">ไปด้านที่ ' + D.hlDomains[i + 1].n + " →</button>";
-      else fwd = '<button type="button" class="btn btn-primary" data-tofoot>ไปบันทึก ↓</button>';
+      else fwd = '<button type="button" class="btn btn-primary" data-tofoot>ไปแบบประเมินความรอบรู้ ↓</button>';
       actions = back + fwd;
     }
     var el = $("#skill");
@@ -699,8 +718,8 @@
       btn.disabled = false; btn.textContent = unlocked() ? "ทำแบบประเมินหลังเรียน" : "ดูวันนัดของฉัน";
       hint.textContent = unlocked() ? (LOCK ? "ครบ 7 วันแล้ว ทำแบบประเมินหลังเรียนได้เลย" : "ทำแบบประเมินหลังเรียนได้เลย") : "ทบทวนได้ระหว่างรอครบ 7 วัน";
     } else {
-      btn.disabled = n < total; btn.textContent = "ทำครบแล้ว บันทึกและรับวันนัด";
-      hint.textContent = n < total ? "ศึกษาเนื้อหาและทำแบบฝึกทักษะให้ครบทั้ง " + total + " ด้าน แล้วกดปุ่มด้านล่างเพื่อบันทึกและรับวันนัดทำแบบประเมินหลังเรียน" : "ทำครบทั้ง " + total + " ด้านแล้ว กดปุ่มด้านล่างเพื่อบันทึกและรับวันนัดทำแบบประเมินหลังเรียน";
+      btn.disabled = n < total; btn.textContent = "ทำครบแล้ว ไปแบบประเมินความรอบรู้";
+      hint.textContent = n < total ? "ศึกษาเนื้อหาและทำตัวอย่างสถานการณ์ให้ครบทั้ง " + total + " ด้าน แล้วกดปุ่มด้านล่างเพื่อทำแบบประเมินความรอบรู้ด้านสุขภาพ (หลังเข้าร่วมโปรแกรม)" : "ทำครบทั้ง " + total + " ด้านแล้ว กดปุ่มด้านล่างเพื่อทำแบบประเมินความรอบรู้ด้านสุขภาพ (หลังเข้าร่วมโปรแกรม) แล้วรับวันนัด";
     }
   }
 
@@ -734,8 +753,8 @@
   $("#btnSkillsDone").addEventListener("click", function () {
     if (!S.preCompleted) return go(nextStep());
     if (S.stage1Saved) return go(nextStep());
-    if (!allSkillsDone()) return toast("กรุณาทำแบบฝึกทักษะให้ครบทั้ง 6 ด้านก่อน");
-    submitStage1(this);
+    if (!allSkillsDone()) return toast("กรุณาทำความรอบรู้ด้านสุขภาพให้ครบทั้ง 6 ด้านก่อน");
+    go("hlpost");
   });
 
   /* ---------------- บันทึกครั้งที่ 1 ---------------- */
@@ -757,6 +776,11 @@
     p.consent = "ยินยอม";
     addScores(p, "hlpre", "hl_pre"); // ชุดที่ 1 ความรอบรู้ (คอลัมน์ hl_pre…)
     addScores(p, "pre", "pre"); // ชุดที่ 2 พฤติกรรม (คอลัมน์ pre…)
+    // ความรอบรู้หลังศึกษาเนื้อหา (ทำท้ายครั้งที่ 1) คอลัมน์ hl_post… และผลต่างความรอบรู้
+    addScores(p, "hlpost", "hl_post");
+    var hA = calc("hlpre"), hB = calc("hlpost");
+    p.hl_score_diff = hA.mean != null && hB.mean != null ? Math.round((hB.mean - hA.mean) * 100) / 100 : "";
+    p.hl_pct_change = p.hl_score_diff !== "" && hA.mean ? Math.round(p.hl_score_diff / hA.mean * 1000) / 10 : "";
     p.content_topics_read = S.read.length;
     // แบบฝึกทักษะความรอบรู้ 6 ด้าน (ฝึกทำ ไม่ใช่แบบประเมิน): จำนวนด้านที่ทำครบ และจำนวนข้อที่ตอบถูกครั้งแรก
     var qs = [].concat.apply([], D.hlDomains.map(function (d) { return d.quiz; }));
@@ -796,12 +820,12 @@
         return;
       }
       if (!LOCK) {
-        card.innerHTML = '<p class="eyebrow">บันทึกครั้งที่ 1 เรียบร้อย</p><h2>ทำแบบประเมินหลังเรียนได้เลย</h2><p>ท่านทำแบบประเมินหลังเข้าร่วมโปรแกรมได้ทันที 2 ชุด คือ แบบประเมินความรอบรู้ด้านสุขภาพ ' + D.hlpost.items.length + ' ข้อ และแบบประเมินพฤติกรรม ' + D.post.items.length + ' ข้อ ใช้เวลาประมาณ ' + esc(CFG.DURATION_POST_MIN || "15") + ' นาที</p>' +
+        card.innerHTML = '<p class="eyebrow">บันทึกครั้งที่ 1 เรียบร้อย</p><h2>ทำแบบประเมินหลังเรียนได้เลย</h2><p>ท่านทำแบบประเมินพฤติกรรมการป้องกันความเสี่ยงการเกิดโรคซิฟิลิส (หลังเข้าร่วมโปรแกรม) ' + D.post.items.length + ' ข้อ ได้ทันที ใช้เวลาประมาณ ' + esc(CFG.DURATION_POST_MIN || "15") + ' นาที</p>' +
           '<div class="code-remind"><div><span>รหัสส่วนตัวของท่าน</span><strong id="myCode" data-shown="0">••••••</strong></div><button type="button" class="btn btn-ghost btn-sm" id="btnShowCode">แสดงรหัส</button></div>' +
           '<ul class="wait-notes"><li>🔑 ถ้าจะกลับมาทำภายหลัง กด "กลับมาทำแบบประเมินหลังเรียน" ที่หน้าแรก แล้วใส่รหัสส่วนตัว ใช้ได้จากทุกเครื่อง</li>' +
           '<li>📧 ระบบจะส่งอีเมลเตือนเมื่อครบ ' + WAIT_DAYS + ' วัน หากท่านยังไม่ได้ทำ</li></ul>' +
           '<div class="actions"><button class="btn btn-ghost" type="button" data-nav="content">อ่านเนื้อหาอีกครั้ง</button><button class="btn btn-primary" type="button" id="btnGoPost">ทำแบบประเมินหลังเรียน</button></div>';
-        $("#btnGoPost").addEventListener("click", function () { go("hlpost"); });
+        $("#btnGoPost").addEventListener("click", function () { go("post"); });
         var shown0 = false;
         $("#btnShowCode").addEventListener("click", function () {
           shown0 = !shown0; $("#myCode").textContent = shown0 ? S.code : "••••••"; this.textContent = shown0 ? "ซ่อนรหัส" : "แสดงรหัส";
@@ -811,9 +835,9 @@
       }
       var left = t - Date.now();
       if (left <= 0) {
-        card.innerHTML = '<p class="eyebrow">ครั้งที่ 2</p><h2>ครบ 7 วันแล้ว</h2><p>ตอนนี้ท่านทำแบบประเมินหลังเข้าร่วมโปรแกรมได้แล้ว 2 ชุด คือ แบบประเมินความรอบรู้ด้านสุขภาพ ' + D.hlpost.items.length + ' ข้อ และแบบประเมินพฤติกรรม ' + D.post.items.length + ' ข้อ ใช้เวลาประมาณ ' + esc(CFG.DURATION_POST_MIN || "15") + ' นาที</p>' +
+        card.innerHTML = '<p class="eyebrow">ครั้งที่ 2</p><h2>ครบ 7 วันแล้ว</h2><p>ตอนนี้ท่านทำแบบประเมินพฤติกรรมการป้องกันความเสี่ยงการเกิดโรคซิฟิลิส (หลังเข้าร่วมโปรแกรม) ' + D.post.items.length + ' ข้อ ได้แล้ว ใช้เวลาประมาณ ' + esc(CFG.DURATION_POST_MIN || "15") + ' นาที</p>' +
           '<div class="actions"><button class="btn btn-ghost" type="button" data-nav="content">อ่านเนื้อหาอีกครั้ง</button><button class="btn btn-primary" type="button" id="btnGoPost">ทำแบบประเมินหลังเรียน</button></div>';
-        $("#btnGoPost").addEventListener("click", function () { go("hlpost"); });
+        $("#btnGoPost").addEventListener("click", function () { go("post"); });
         clearInterval(waitTimer);
         return;
       }
@@ -862,9 +886,11 @@
       restore("hlpre"); S.hlPreCompleted = true;
       restore("pre");
       S.preCompleted = true; S.read = D.sections.map(function (s) { return s.id; });
+      S.skillRead = D.hlDomains.map(function (d) { return d.id; });
+      D.hlDomains.forEach(function (d) { d.quiz.forEach(function (q) { S.skillQuiz[q.id] = q.answer; }); });
+      restore("hlpost"); S.hlPostCompleted = true;
       S.stage1Saved = true; S.unlockAt = j.unlock_at;
       if (r.status === "ทำครบ") {
-        restore("hlpost"); S.hlPostCompleted = true;
         restore("post");
         S.postSaved = true; S.satSaved = !!r.satisfaction_at;
         S.thankIdx = Math.floor(Math.random() * D.thanks.length);
@@ -883,12 +909,9 @@
       return { diff: d, pct: d !== "" && a.mean ? Math.round(d / a.mean * 1000) / 10 : "" };
     };
     var p = { action: "stage2", code: S.code, response_id: S.id, post_submitted_at_client: new Date().toISOString() };
-    addScores(p, "hlpost", "hl_post");
-    var hl = change(calc("hlpre"), calc("hlpost"));
-    p.hl_score_diff = hl.diff;
-    p.hl_pct_change = hl.pct;
     addScores(p, "post", "post");
-    var bh = change(calc("pre"), calc("post"));
+    var bA = calc("pre"), bB = calc("post");
+    var bh = { diff: bA.n && bB.n ? bB.total - bA.total : "", pct: bA.n && bB.n && bA.total ? Math.round((bB.total - bA.total) / bA.total * 1000) / 10 : "" };
     p.score_diff = bh.diff;
     p.pct_change = bh.pct;
     var done = function () {
@@ -911,64 +934,58 @@
      สรุปผล
      ====================================================== */
   function renderSummary() {
-    var pre = calc("pre"), post = calc("post"), max = D.scoreMax;
+    var pre = calc("pre"), post = calc("post"), bMax = D.pre.items.length * D.scoreMax;
     var hlPre = calc("hlpre"), hlPost = calc("hlpost"), hlMax = D.hlpre.scoreMax;
-    function scoreBox(label, r, cls, mx) {
-      mx = mx || max;
+    // กล่องคะแนน: ความรอบรู้แสดงคะแนนเฉลี่ย · พฤติกรรมแสดงคะแนนรวม (ตามเกณฑ์ของแต่ละแบบประเมิน)
+    function scoreBox(label, r, cls, useTotal) {
       var badge = r.level ? '<span class="badge ' + r.level.key + '">' + r.level.label + "</span>" : '<span class="badge">ไม่มีข้อมูล</span>';
-      return '<div class="score ' + cls + '"><div class="s-label">' + label + '</div><div class="s-num">' + (r.mean == null ? "—" : r.mean.toFixed(2)) + " <small>/ " + mx + "</small></div>" + badge +
-        '<div class="s-sub">' + (r.n ? "คะแนนรวม " + r.total + " จาก " + (r.n * mx) + " (" + r.n + " ข้อ)" : "") + "</div></div>";
+      var big = useTotal ? (r.n ? r.total : "—") + " <small>/ " + bMax + "</small>" : (r.mean == null ? "—" : r.mean.toFixed(2)) + " <small>/ " + hlMax + "</small>";
+      var sub = !r.n ? "" : useTotal ? "คะแนนเฉลี่ยรายข้อ " + r.mean.toFixed(2) + " จาก " + D.scoreMax : "คะแนนรวม " + r.total + " จาก " + (r.n * hlMax) + " (" + r.n + " ข้อ)";
+      return '<div class="score ' + cls + '"><div class="s-label">' + label + '</div><div class="s-num">' + big + "</div>" + badge + '<div class="s-sub">' + sub + "</div></div>";
     }
-    function bar(label, r, cls, mx) {
-      mx = mx || max;
-      var w = r.mean == null ? 0 : (r.mean / mx) * 100;
-      return '<div class="bar-row"><span>' + label + '</span><div class="bar-track"><div class="bar-fill ' + cls + '" style="width:' + Math.max(w, 2) + '%"></div></div><span>' + (r.mean == null ? "—" : r.mean.toFixed(2)) + "</span></div>";
+    function bar(label, val, max, cls, txt) {
+      var w = val == null ? 0 : (val / max) * 100;
+      return '<div class="bar-row"><span>' + label + '</span><div class="bar-track"><div class="bar-fill ' + cls + '" style="width:' + Math.max(w, 2) + '%"></div></div><span>' + txt + "</span></div>";
+    }
+    function changeLine(d, unit, fmt) {
+      if (d == null) return "";
+      return '<p class="change ' + (d > 0 ? "good" : d < 0 ? "bad" : "") + '">' +
+        (d > 0 ? "▲ " + unit + "เพิ่มขึ้น " + fmt(d) + " คะแนน (ดีขึ้น)" : d < 0 ? "▼ " + unit + "ลดลง " + fmt(Math.abs(d)) + " คะแนน" : "● " + unit + "เท่าเดิม") + "</p>";
     }
     // ตารางเกณฑ์แปลผล ไฮไลต์ระดับของผู้ตอบ (ก่อน/หลัง)
-    function criteriaTable(levels, lo, hi, rPre, rPost, unit) {
-      var rows = levels.slice().sort(function (a, b) { return a.min - b.min; });
-      return '<table class="crit"><caption>เกณฑ์การแปลผล (' + unit + ')</caption><thead><tr><th scope="col">คะแนนเฉลี่ย</th><th scope="col">ระดับ</th><th scope="col">ผลของท่าน</th></tr></thead><tbody>' +
-        rows.map(function (l, i) {
-          var from = Math.max(l.min, lo), to = i < rows.length - 1 ? rows[i + 1].min - 0.01 : hi;
+    function criteriaTable(levels, rPre, rPost, head, caption) {
+      return '<table class="crit"><caption>' + caption + '</caption><thead><tr><th scope="col">' + head + '</th><th scope="col">ระดับ</th><th scope="col">ผลของท่าน</th></tr></thead><tbody>' +
+        levels.map(function (l) {
           var mine = [];
           if (rPre.level && rPre.level.key === l.key) mine.push("ก่อน");
           if (rPost.level && rPost.level.key === l.key) mine.push("หลัง");
-          return '<tr class="' + (mine.length ? "is-mine " : "") + l.key + '"><td>' + from.toFixed(2) + "–" + to.toFixed(2) + '</td><td><span class="badge ' + l.key + '">' + esc(l.label) + "</span></td><td>" + (mine.length ? "◀ " + mine.join(" / ") : "") + "</td></tr>";
+          return '<tr class="' + (mine.length ? "is-mine " : "") + l.key + '"><td>' + l.range + '</td><td><span class="badge ' + l.key + '">' + esc(l.label) + "</span></td><td>" + (mine.length ? "◀ " + mine.join(" / ") : "") + "</td></tr>";
         }).join("") + "</tbody></table>";
     }
-    // ความรอบรู้: คะแนนเพิ่มขึ้น = ดีขึ้น
-    var hlChange = "";
-    if (hlPre.mean != null && hlPost.mean != null) {
-      var hd = Math.round((hlPost.mean - hlPre.mean) * 100) / 100;
-      hlChange = '<p class="change ' + (hd > 0 ? "good" : hd < 0 ? "bad" : "") + '">' +
-        (hd > 0 ? "▲ คะแนนความรอบรู้เพิ่มขึ้น " + hd.toFixed(2) + " คะแนน" : hd < 0 ? "▼ คะแนนความรอบรู้ลดลง " + Math.abs(hd).toFixed(2) + " คะแนน" : "● คะแนนความรอบรู้เท่าเดิม") + "</p>";
-    }
+    var hd = hlPre.mean != null && hlPost.mean != null ? Math.round((hlPost.mean - hlPre.mean) * 100) / 100 : null;
     var hlMain = hlPost.level || hlPre.level;
     var hlHtml =
       '<h3 class="sum-h">1. ความรอบรู้ด้านสุขภาพเกี่ยวกับโรคซิฟิลิส</h3>' +
       '<p class="muted">คะแนนเฉลี่ย 1–' + hlMax + ' <strong>คะแนนยิ่งสูง ยิ่งมีความรอบรู้มาก</strong></p>' +
-      '<div class="score-grid">' + scoreBox("ก่อนเข้าร่วมโปรแกรม", hlPre, "before", hlMax) + scoreBox("หลังเข้าร่วมโปรแกรม", hlPost, "after", hlMax) + "</div>" +
-      '<div class="bars">' + bar("ก่อน", hlPre, "before", hlMax) + bar("หลัง", hlPost, "after", hlMax) + "</div>" + hlChange +
-      (hlMain ? '<div class="advice ' + hlMain.key + '"><h4>' + hlMain.label + "</h4><p>" + esc(hlMain.message) + "</p></div>" : "") +
-      criteriaTable(D.hlpre.levels, 1, hlMax, hlPre, hlPost, "คะแนนเฉลี่ย 1–" + hlMax + " ยิ่งสูงยิ่งดี");
-    var change = "";
-    if (pre.mean != null && post.mean != null) {
-      var d = Math.round((post.mean - pre.mean) * 100) / 100;
-      change = '<p class="change ' + (d < 0 ? "good" : d > 0 ? "bad" : "") + '">' +
-        (d < 0 ? "▼ คะแนนความเสี่ยงลดลง " + Math.abs(d).toFixed(2) + " คะแนน" : d > 0 ? "▲ คะแนนความเสี่ยงเพิ่มขึ้น " + d.toFixed(2) + " คะแนน" : "● คะแนนความเสี่ยงเท่าเดิม") + "</p>";
-    }
+      '<div class="score-grid">' + scoreBox("ก่อนเข้าร่วมโปรแกรม", hlPre, "before", false) + scoreBox("หลังศึกษาเนื้อหา", hlPost, "after", false) + "</div>" +
+      '<div class="bars">' + bar("ก่อน", hlPre.mean, hlMax, "before", hlPre.mean == null ? "—" : hlPre.mean.toFixed(2)) + bar("หลัง", hlPost.mean, hlMax, "after", hlPost.mean == null ? "—" : hlPost.mean.toFixed(2)) + "</div>" +
+      changeLine(hd, "คะแนนความรอบรู้", function (x) { return x.toFixed(2); }) +
+      (hlMain ? '<div class="advice ' + hlMain.key + '"><h4>ความรอบรู้ด้านสุขภาพ' + hlMain.label + "</h4><p>" + esc(hlMain.message) + "</p></div>" : "") +
+      criteriaTable(D.hlpre.levels, hlPre, hlPost, "คะแนนเฉลี่ย", "เกณฑ์การแปลผลความรอบรู้ด้านสุขภาพ (คะแนนเฉลี่ย 1–" + hlMax + ")");
+    var bd = pre.n && post.n ? post.total - pre.total : null;
     var main = post.level || pre.level;
     $("#summaryCard").innerHTML =
-      '<p class="eyebrow">ขั้นที่ 4 · ครั้งที่ 2 · สรุปผล</p><h2>ผลการประเมินของคุณ</h2>' + hlHtml +
+      '<p class="eyebrow">ขั้นที่ 3 · ครั้งที่ 2 · สรุปผล</p><h2>ผลการประเมินของคุณ</h2>' + hlHtml +
       '<h3 class="sum-h">2. พฤติกรรมการป้องกันความเสี่ยงการเกิดโรคซิฟิลิส</h3>' +
-      '<p class="muted">คะแนนเฉลี่ย 0–' + max + ' <strong>คะแนนยิ่งสูง ยิ่งมีความเสี่ยงต่อการติดเชื้อซิฟิลิสมาก</strong></p>' +
-      '<div class="score-grid">' + scoreBox("ก่อนเข้าร่วมโปรแกรม", pre, "before") + scoreBox("หลังเข้าร่วมโปรแกรม", post, "after") + "</div>" +
-      '<div class="bars">' + bar("ก่อน", pre, "before") + bar("หลัง", post, "after") + "</div>" + change +
-      (main ? '<div class="advice ' + main.key + '"><h4>' + main.label + "</h4><p>" + esc(main.message) + '</p><p class="tips-h">คำแนะนำ</p><ul>' +
+      '<p class="muted">คะแนนรวม 0–' + bMax + ' <strong>คะแนนยิ่งสูง ยิ่งมีพฤติกรรมการป้องกันที่ดี</strong></p>' +
+      '<div class="score-grid">' + scoreBox("ก่อนเข้าร่วมโปรแกรม", pre, "before", true) + scoreBox("หลังเข้าร่วมโปรแกรม", post, "after", true) + "</div>" +
+      '<div class="bars">' + bar("ก่อน", pre.n ? pre.total : null, bMax, "before", pre.n ? pre.total : "—") + bar("หลัง", post.n ? post.total : null, bMax, "after", post.n ? post.total : "—") + "</div>" +
+      changeLine(bd, "คะแนนพฤติกรรม", function (x) { return x; }) +
+      (main ? '<div class="advice ' + main.key + '"><h4>พฤติกรรมอยู่ใน' + main.label + "</h4><p>" + esc(main.message) + '</p><p class="tips-h">คำแนะนำ</p><ul>' +
         main.tips.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul></div>" : "") +
+      criteriaTable(D.levels, pre, post, "คะแนนรวม", "เกณฑ์การแปลผลพฤติกรรม (คะแนนรวม 0–" + bMax + ")") +
       '<p class="disclaimer">' + esc(D.disclaimer) + "</p>" +
-      criteriaTable(D.levels, 0, max, pre, post, "คะแนนเฉลี่ย 0–" + max + " ยิ่งต่ำยิ่งดี") +
-      '<div class="save-status ok">✓ บันทึกคำตอบทั้ง 2 ครั้ง (ครั้งละ 2 ชุด) เรียบร้อยแล้ว</div>' +
+      '<div class="save-status ok">✓ บันทึกคำตอบทั้ง 2 ครั้งเรียบร้อยแล้ว</div>' +
       '<div class="actions"><button class="btn btn-ghost" type="button" data-nav="content">ทบทวนเนื้อหา</button><button class="btn btn-primary" type="button" id="btnToThanks">ไปต่อ</button></div>';
     $("#btnToThanks").addEventListener("click", function () { go("thanks"); });
   }
@@ -1045,7 +1062,7 @@
 
   function renderSources() {
     $("#refList").innerHTML = D.references.map(function (r) {
-      return "<li>" + esc(r.text) + ' <a href="' + r.url + '" target="_blank" rel="noopener">' + esc(r.url) + "</a><small>ใช้ในหัวข้อ: " + esc(r.used) + "</small></li>";
+      return "<li>" + esc(r.text) + (r.url ? ' <a href="' + r.url + '" target="_blank" rel="noopener">' + esc(r.url) + "</a>" : "") + (r.used ? "<small>ใช้ในหัวข้อ: " + esc(r.used) + "</small>" : "") + "</li>";
     }).join("");
   }
   $("#btnSourcesBack").addEventListener("click", function () { go(S.prevView && S.prevView !== "sources" ? S.prevView : "home"); });

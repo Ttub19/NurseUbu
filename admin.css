@@ -184,4 +184,10 @@ input[type=date] { -webkit-appearance: none; appearance: none; }
 .lv.low { background: var(--btn); color: #fff; }
 .lv.mid { background: #F2C46B; }
 .lv.high { background: var(--danger); color: #fff; }
-.rev.ok { color: var(--ink-soft); }
+.lv.hl-high { background: var(--btn); color: #fff; }
+.lv.hl-mid { background: #F2C46B; }
+.lv.hl-low { background: var(--danger); color: #fff; }
+.a-sec-h { font-size: 1.15rem; margin: 22px 0 10px; }
+.a-sec-h small { font-size: .82rem; font-weight: 500; }
+.kpis.kpis-hl { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 1000px) { .kpis.kpis-hl { grid-template-columns: repeat(2, 1fr); } }.rev.ok { color: var(--ink-soft); }

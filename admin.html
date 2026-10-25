@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>แอดมิน | UBU Sex Education</title>
+  <title>แอดมิน | Sex Education</title>
   <link rel="icon" href="assets/logo-nursing-ubu.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,7 +17,7 @@
   <!-- เข้าสู่ระบบ -->
   <section id="loginView" class="login-wrap">
     <form class="card login" id="loginForm" novalidate>
-      <div class="login-brand"><img src="assets/logo-nursing-ubu.svg" alt="" width="44" height="44"><div><strong>UBU Sex Education</strong><span>สำหรับผู้วิจัย</span></div></div>
+      <div class="login-brand"><img src="assets/logo-nursing-ubu.svg" alt="" width="44" height="44"><div><strong>Sex Education</strong><span>สำหรับผู้วิจัย</span></div></div>
       <h1>เข้าสู่หน้าแอดมิน</h1>
       <label class="lbl" for="pw">รหัสผ่าน</label>
       <div class="pw-row">
@@ -38,7 +38,7 @@
   <div id="appView" hidden>
     <header class="a-top">
       <div class="a-top-in">
-        <div class="a-brand"><img src="assets/logo-nursing-ubu.svg" alt="" width="30" height="30"><span>UBU Sex Education <em>แอดมิน</em></span></div>
+        <div class="a-brand"><img src="assets/logo-nursing-ubu.svg" alt="" width="30" height="30"><span>Sex Education <em>แอดมิน</em></span></div>
         <div class="a-actions">
           <span class="fetched" id="fetchedAt" aria-live="polite"></span>
           <button class="btn btn-ghost btn-sm" type="button" id="refreshBtn"><span aria-hidden="true">↻</span> รีเฟรช</button>
@@ -89,7 +89,7 @@
       </div>
 
       <!-- พฤติกรรม -->
-      <h2 class="a-sec-h">พฤติกรรมการป้องกันความเสี่ยงการเกิดโรคซิฟิลิส <small class="muted">(14 ข้อ · คะแนน 0–4 · สูง = เสี่ยงมาก)</small></h2>
+      <h2 class="a-sec-h">พฤติกรรมการป้องกันความเสี่ยงการเกิดโรคซิฟิลิส <small class="muted">(14 ข้อ · คะแนนรวม 0–56 · สูง = พฤติกรรมดี)</small></h2>
       <!-- การ์ดสรุป -->
       <section class="kpis" id="kpis" aria-label="สรุปภาพรวม"></section>
 
@@ -102,14 +102,14 @@
         </section>
         <!-- กราฟระดับ -->
         <section class="panel" aria-labelledby="lvH">
-          <h2 id="lvH">จำนวนผู้ตอบแต่ละระดับความเสี่ยง</h2>
+          <h2 id="lvH">จำนวนผู้ตอบแต่ละระดับพฤติกรรม</h2>
           <div class="legend"><span><i class="sw-before"></i>ก่อนเข้าร่วมโปรแกรม</span><span><i class="sw-after"></i>หลังเข้าร่วมโปรแกรม</span></div>
           <div id="levelChart"></div>
         </section>
       </div>
 
       <section class="panel" aria-labelledby="facH">
-        <h2 id="facH">คะแนนความเสี่ยงเฉลี่ยแยกตามคณะ</h2>
+        <h2 id="facH">คะแนนพฤติกรรมรวมเฉลี่ยแยกตามคณะ</h2>
         <div class="legend"><span><i class="sw-before"></i>ก่อน</span><span><i class="sw-after"></i>หลัง</span></div>
         <div id="facultyChart"></div>
       </section>
@@ -174,8 +174,8 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="config.js"></script>
-  <script src="data.js"></script>
-  <script src="admin.js"></script>
+  <script src="config.js?v=20261025-5"></script>
+  <script src="data.js?v=20261025-5"></script>
+  <script src="admin.js?v=20261025-5"></script>
 </body>
 </html>
