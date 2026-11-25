@@ -78,6 +78,8 @@
   var dtf = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Bangkok", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
   var THMONTH = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
   function parts(iso) { var d = new Date(iso), o = {}; if (isNaN(d)) return null; dtf.formatToParts(d).forEach(function (p) { o[p.type] = p.value; }); return o; }
+  var THMON_S = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  function fmtShort(iso) { var p = parts(iso); return p ? Number(p.day) + " " + THMON_S[Number(p.month) - 1] : ""; }
   function fmtLong(iso) {
     var p = parts(iso); if (!p) return "—";
     return Number(p.day) + " " + THMONTH[Number(p.month) - 1] + " " + (Number(p.year) + 543) + " เวลา " + p.hour + ":" + p.minute + " น.";
@@ -143,9 +145,7 @@
     if (Array.isArray(v)) el.innerHTML = '<ul class="cfg-list">' + v.map(memberLi).join("") + "</ul>";
     else el.textContent = v || "";
   });
-  if (CFG.HERO_IMAGE) document.documentElement.style.setProperty("--hero-img", 'url("' + String(CFG.HERO_IMAGE).replace(/"/g, "") + '")');
-  var hint = $(".scroll-hint");
-  if (hint) hint.addEventListener("click", function (e) { e.preventDefault(); $("#homeMore").scrollIntoView({ behavior: "smooth", block: "start" }); });
+  if (CFG.HERO_IMAGE && $("#heroImg")) $("#heroImg").src = String(CFG.HERO_IMAGE);
   $$("[data-cfg-wrap]").forEach(function (el) { el.hidden = !CFG[el.getAttribute("data-cfg-wrap")]; });
   $$("[data-mailto]").forEach(function (el) { if (el.textContent) el.href = "mailto:" + el.textContent; });
   $("#ackBody").innerHTML = D.acknowledgement.map(function (t) {
@@ -159,6 +159,27 @@
       (T.unit ? '<p class="muted">' + esc(T.unit) + "</p>" : "");
     $$("[data-credits]").forEach(function (el) { el.innerHTML = html; });
   })();
+
+  /* หัวข้อเนื้อหาในหน้าแรก (ไอคอนตามหัวข้อ) */
+  var TOPIC_ICON = { about: "i-help", cause: "i-germ", symptoms: "i-steth", transmission: "i-repeat", diagnosis: "i-tube", treatment: "i-pill", prevention: "i-shield", selfcare: "i-leaf", facts: "i-bulb" };
+  var SKILL_ICON = { access: "i-pin", cognitive: "i-book", communication: "i-chat", media: "i-phone", decision: "i-scale", selfmgmt: "i-calendar" };
+  function icon(id) { return '<svg class="icon" aria-hidden="true"><use href="#' + (id || "i-book") + '"/></svg>'; }
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function renderHomeTopics() {
+    var box = $("#homeTopics"); if (!box) return;
+    box.innerHTML = D.sections.map(function (s, i) {
+      var read = S.read.indexOf(s.id) > -1;
+      return '<button type="button" class="topic-tile" data-topic-id="' + s.id + '"><span class="topic-ic"><svg class="icon" aria-hidden="true"><use href="#' + (TOPIC_ICON[s.id] || "i-book") + '"/></svg></span>' +
+        "<span><small>หัวข้อ " + pad2(i + 1) + (read ? ' · <span class="is-read">อ่านแล้ว</span>' : "") + "</small><strong>" + esc(s.title) + "</strong></span></button>";
+    }).join("");
+  }
+  // กดหัวข้อจากหน้าแรก → เปิดหัวข้อนั้นในหน้าเนื้อหา
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("[data-topic-id]"); if (!t) return;
+    var i = D.sections.map(function (s) { return s.id; }).indexOf(t.getAttribute("data-topic-id"));
+    if (i < 0) return;
+    S.topic = i; save(); go("content");
+  });
 
   /* ======================================================
      การนำทาง
@@ -197,6 +218,7 @@
     if (view === "skills" && !S.stage1Saved && !allTopicsRead()) { toast("กรุณาอ่านเนื้อหาให้ครบทั้ง " + D.sections.length + " หัวข้อก่อน"); view = "content"; }
     if (view === "wait" && !S.stage1Saved) view = nextStep();
     if ((view === "summary" || view === "thanks" || view === "ack") && !S.postSaved) view = nextStep();
+    if (view === "info" && S.stage1Saved) view = nextStep();
     if (["hlpre", "pre", "info"].indexOf(view) > -1 && !S.id) view = "consent";
     if ((view === "hlpre" || view === "pre") && !S.info.consent_final) view = "info";
     if (view === "pre" && !S.hlPreCompleted) view = "hlpre";
@@ -207,6 +229,7 @@
     save();
     $$(".view").forEach(function (sec) { sec.hidden = sec.getAttribute("data-view") !== view; });
     document.body.classList.toggle("on-home", view === "home");
+    setMenu(false, true);
     clearInterval(waitTimer);
     renderView(view);
     updateNav();
@@ -215,34 +238,95 @@
     if (!opts.noFocus) { var m = $("#main"); if (m) m.focus({ preventScroll: true }); }
   }
 
+  /* ---------------- แถบเมนูซ้าย / แถบล่างบนมือถือ ---------------- */
+  // หน้าไหนอยู่ใต้เมนูไหน
+  var NAV_OF = { home: "home", resume: "home", consent: "consent", info: "info", hlpre: "assess", pre: "assess", content: "content", skills: "skills", hlpost: "hlpost", wait: "post", post: "post", summary: "summary", thanks: "thanks", ack: "ack", sources: "sources" };
+  var TAB_OF = { home: "home", resume: "home", consent: "home", info: "home", hlpre: "assess", pre: "assess", hlpost: "assess", wait: "assess", post: "assess", content: "content", skills: "content", summary: "summary", thanks: "summary", ack: "summary" };
+  var LOCK_ICON = '<svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg><span class="sr">ยังไม่เปิด</span>';
+  // สถานะของแต่ละเมนู: badge = ข้อความด้านขวา · done = ทำครบ · locked = ยังทำไม่ได้
+  function navState(k) {
+    var nRead = Math.min(S.read.length, D.sections.length), nSkill = D.hlDomains.filter(skillDone).length;
+    switch (k) {
+      case "consent": return { done: !!S.id };
+      case "info": return { done: !!S.info.consent_final, locked: !S.id };
+      case "assess": var a = (S.hlPreCompleted ? 1 : 0) + (S.preCompleted ? 1 : 0); return { done: a === 2, locked: !S.info.consent_final, badge: S.info.consent_final ? a + "/2" : "" };
+      case "content": return { done: allTopicsRead(), badge: nRead + "/" + D.sections.length };
+      case "skills": return { done: allSkillsDone() && S.preCompleted, locked: !S.preCompleted || (!S.stage1Saved && !allTopicsRead()), badge: S.preCompleted ? nSkill + "/" + D.hlDomains.length : "" };
+      case "hlpost": return { done: S.stage1Saved, locked: !S.stage1Saved && !(S.preCompleted && allTopicsRead() && allSkillsDone()) };
+      case "post": return { done: S.postSaved, locked: !S.stage1Saved || (!S.postSaved && !unlocked()) };
+      case "summary": return { locked: !S.postSaved };
+      case "thanks": return { done: S.satSaved, locked: !S.postSaved };
+      case "ack": return { locked: !S.postSaved };
+      default: return {};
+    }
+  }
   function updateNav() {
-    $$(".nav button").forEach(function (b) {
-      var k = b.getAttribute("data-nav");
-      b.disabled = false;
-      var cur = (k === "home" && ["home", "consent", "info", "resume"].indexOf(S.view) > -1) ||
-                (k === "assess" && ["hlpre", "pre", "wait", "hlpost", "post", "summary", "thanks", "ack"].indexOf(S.view) > -1) ||
-                (k === "content" && (S.view === "content" || S.view === "skills")) ||
-                (k === "sources" && S.view === "sources");
-      if (cur) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+    var active = NAV_OF[S.view] || "", tab = TAB_OF[S.view] || "";
+    $$(".snav-item").forEach(function (b) {
+      var k = b.getAttribute("data-nav"), st = navState(k), badge = $(".snav-badge", b);
+      if (k === active) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+      b.classList.toggle("is-locked", !!st.locked);
+      badge.classList.toggle("is-done", !!st.done);
+      badge.innerHTML = st.locked ? LOCK_ICON : st.done ? "✓" : esc(st.badge || "");
     });
-    var marks = [S.hlPreCompleted, S.preCompleted, allTopicsRead() && S.preCompleted, S.stage1Saved, S.postSaved, S.view === "thanks" || S.view === "ack"];
+    $$(".tab-item").forEach(function (b) {
+      if (b.getAttribute("data-tab") === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+    });
+    var marks = [!!S.id, !!S.info.consent_final, S.hlPreCompleted, S.preCompleted, S.preCompleted && allTopicsRead(), S.preCompleted && allSkillsDone(), S.stage1Saved, S.postSaved];
     var steps = marks.filter(Boolean).length;
-    $("#progressBar").style.width = (S.id ? 8 + steps * 92 / marks.length : 0) + "%";
+    $("#progressBar").style.width = (steps / marks.length * 100) + "%";
+    $("#pcStage").textContent = !S.id ? "ยังไม่เริ่ม" : S.postSaved ? "ทำครบแล้ว" : S.stage1Saved ? "ครั้งที่ 2" : "ครั้งที่ 1";
+    $("#pcCount").textContent = S.id ? steps + " จาก " + marks.length + " ขั้น" : "";
+    $("#snavStage2").textContent = S.stage1Saved && !S.postSaved ? (unlocked() ? "ครั้งที่ 2 · ทำได้แล้ว" : "ครั้งที่ 2 · " + fmtShort(S.unlockAt)) : "ครั้งที่ 2";
     var start = $("#btnStart");
     start.textContent = !S.id ? "เริ่มต้น" : S.postSaved ? "ดูผลของฉัน" : S.stage1Saved ? (unlocked() ? "ทำแบบประเมินหลังเรียน" : "ดูวันนัดของฉัน") : "ทำต่อจากเดิม";
     $("#btnReturn").hidden = !!S.id;
     $("#notMe").hidden = !S.id;
   }
 
+  function navTo(k) {
+    if (k === "home" || k === "content" || k === "sources" || k === "consent") return go(k);
+    if (k === "info") { if (S.stage1Saved) { toast("บันทึกข้อมูลส่วนบุคคลไปพร้อมครั้งที่ 1 แล้ว"); return; } return go(S.id ? "info" : "consent"); }
+    if (k === "assess") {
+      if (S.hlPreCompleted && S.preCompleted) { toast("ทำแบบประเมินก่อนเรียนครบแล้ว"); return; }
+      return go(!S.id ? "consent" : !S.info.consent_final ? "info" : !S.hlPreCompleted ? "hlpre" : "pre");
+    }
+    // ปุ่ม "ประเมิน" บนแถบล่าง: ไปแบบประเมินถัดไปที่ต้องทำ
+    if (k === "assessnext") return go(!S.id ? "consent" : (S.preCompleted && !S.stage1Saved) ? "hlpost" : nextStep());
+    if (k === "skills" || k === "hlpost") {
+      if (k === "hlpost" && S.stage1Saved) { toast("บันทึกครั้งที่ 1 เรียบร้อยแล้ว"); return; }
+      if (!S.preCompleted) { toast("กรุณาทำแบบประเมินก่อนเรียนให้ครบก่อน"); return; }
+      return go(k);
+    }
+    if (k === "post") return go("post");
+    if (k === "summary" || k === "thanks" || k === "ack") {
+      if (!S.postSaved) { toast("ดูได้หลังทำแบบประเมินหลังเรียนครบ"); return; }
+      return go(k);
+    }
+  }
   document.addEventListener("click", function (e) {
     var t = e.target.closest("[data-nav]");
     if (!t || t.disabled) return;
-    var k = t.getAttribute("data-nav");
-    if (k === "home") return go("home");
-    if (k === "content") return go("content");
-    if (k === "sources") return go("sources");
-    if (k === "assess") return go(!S.id ? "consent" : (S.preCompleted && !S.stage1Saved) ? "hlpost" : nextStep());
+    navTo(t.getAttribute("data-nav"));
   });
+
+  // เมนูเลื่อนออกจากด้านข้าง (มือถือ)
+  var menuOpener = null;
+  function setMenu(open, quiet) {
+    var sb = $("#sidebar"), was = sb.classList.contains("is-open");
+    if (was === open) return;
+    sb.classList.toggle("is-open", open);
+    $("#navOverlay").hidden = !open;
+    $("#btnMenu").setAttribute("aria-expanded", String(open));
+    document.body.style.overflow = open ? "hidden" : "";
+    if (open) { menuOpener = document.activeElement; setTimeout(function () { $("#btnNavClose").focus(); }, 30); }
+    else if (!quiet && menuOpener) menuOpener.focus();
+  }
+  $("#btnMenu").addEventListener("click", function () { setMenu(true); });
+  $("[data-menu]").addEventListener("click", function () { setMenu(true); });
+  $("#btnNavClose").addEventListener("click", function () { setMenu(false); });
+  $("#navOverlay").addEventListener("click", function () { setMenu(false); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && $("#sidebar").classList.contains("is-open")) setMenu(false); });
 
   $("#btnStart").addEventListener("click", function () { go(S.id ? nextStep() : "consent"); });
   $("#btnReturn").addEventListener("click", function () { go("resume"); });
@@ -437,27 +521,67 @@
     post: { step: "ขั้นที่ 2 · ครั้งที่ 2 · หลังเข้าร่วมโปรแกรม", btn: "บันทึกและดูผลของฉัน" }
   };
   function answered(v) { return v != null && v !== ""; }
+  // แสดงทีละหน้า หน้าละ PAGE_SIZE ข้อ (คำตอบบันทึกทุกครั้งที่คลิกเหมือนเดิม)
+  var PAGE_SIZE = 6, aPage = {};
+  function pageCount(kind) { return Math.max(1, Math.ceil(D[kind].items.length / PAGE_SIZE)); }
   function renderAssess(kind) {
     var set = D[kind], answers = S[kind], form = $("#" + kind + "Form");
-    var html = '<p class="eyebrow">' + ASSESS_META[kind].step + "</p><h2>" + esc(set.title) + "</h2>" +
-      (set.subtitle ? '<p class="q-sub">' + esc(set.subtitle) + "</p>" : "") +
+    var html = '<header class="a-head"><p class="eyebrow">' + ASSESS_META[kind].step + "</p><h2>" + esc(set.title) + "</h2>" +
+      (set.subtitle ? '<p class="q-sub">' + esc(set.subtitle) + "</p>" : "") + "</header>" +
+      '<div class="q-progress"><div class="q-progress-top"><strong data-count></strong><span data-page-label></span></div><div class="bar" aria-hidden="true"><i data-count-bar></i></div></div>' +
       '<div class="q-guide"><p><strong>คำชี้แจง</strong> ' + esc(set.lead) + "</p>" +
       (set.legend ? '<ul class="scale-legend">' + set.legend.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>" : "") + "</div>";
     set.items.forEach(function (it, i) {
-      html += '<fieldset class="q" data-q="' + it.id + '"><legend><span class="qn">' + (i + 1) + ".</span>" + esc(it.text) + "</legend>" +
+      html += '<fieldset class="q" data-q="' + it.id + '" data-page="' + Math.floor(i / PAGE_SIZE) + '"><legend><span class="qn">' + (i + 1) + ".</span>" + esc(it.text) + "</legend>" +
         '<div class="choices scale">' + chipGroup(it.id, set.scale || D.scale, answers[it.id] || "") + "</div>" +
         '<p class="field-error" hidden>กรุณาเลือกคำตอบข้อนี้</p></fieldset>';
     });
-    html += '<p class="form-count" data-count></p><p class="field-error" data-submit-err hidden></p><div class="actions"><button class="btn btn-primary" type="submit">' +
-      ASSESS_META[kind].btn + "</button></div>";
+    html += '<p class="field-error" data-submit-err hidden></p>' +
+      '<div class="a-nav"><div class="a-left"><button type="button" class="btn btn-secondary" data-page-prev>← ก่อนหน้า</button></div>' +
+      '<div class="a-right"><span class="form-count" data-page-hint></span>' +
+      '<button type="button" class="btn btn-primary btn-lg" data-page-next>ถัดไป</button>' +
+      '<button class="btn btn-primary btn-lg" type="submit">' + ASSESS_META[kind].btn + "</button></div></div>";
     form.innerHTML = html;
+    // เปิดที่หน้าแรกที่ยังมีข้อไม่ได้ตอบ
+    var first = set.items.map(function (it) { return answered(answers[it.id]); }).indexOf(false);
+    showPage(kind, first < 0 ? pageCount(kind) - 1 : Math.floor(first / PAGE_SIZE), false);
+  }
+  function pageItems(kind, p) { return D[kind].items.slice(p * PAGE_SIZE, (p + 1) * PAGE_SIZE); }
+  function showPage(kind, p, scroll) {
+    var form = $("#" + kind + "Form"), pages = pageCount(kind);
+    p = Math.max(0, Math.min(pages - 1, p)); aPage[kind] = p;
+    $$("fieldset.q", form).forEach(function (q) { q.hidden = Number(q.getAttribute("data-page")) !== p; });
+    $("[data-page-prev]", form).hidden = p === 0;
+    var next = $("[data-page-next]", form), last = p === pages - 1;
+    next.hidden = last;
+    $('button[type="submit"]', form).hidden = !last;
+    if (!last) next.textContent = "ถัดไป: ข้อ " + ((p + 1) * PAGE_SIZE + 1) + "–" + Math.min((p + 2) * PAGE_SIZE, D[kind].items.length);
+    $("[data-page-label]", form).textContent = pages > 1 ? "หน้า " + (p + 1) + " จาก " + pages + " · คำตอบบันทึกในเครื่องอัตโนมัติ" : "คำตอบบันทึกในเครื่องอัตโนมัติ";
     updateCount(kind);
+    if (scroll) { form.scrollIntoView({ block: "start" }); var h = $("h2", form); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); } }
   }
   function updateCount(kind) {
-    var items = D[kind].items;
+    var items = D[kind].items, form = $("#" + kind + "Form");
     var n = items.filter(function (it) { return answered(S[kind][it.id]); }).length;
-    var el = $("#" + kind + "Form [data-count]");
+    var el = $("[data-count]", form);
     if (el) el.textContent = "ตอบแล้ว " + n + " จาก " + items.length + " ข้อ";
+    var bar = $("[data-count-bar]", form); if (bar) bar.style.width = (n / items.length * 100) + "%";
+    var hint = $("[data-page-hint]", form);
+    if (hint) {
+      var left = pageItems(kind, aPage[kind] || 0).filter(function (it) { return !answered(S[kind][it.id]); }).length;
+      hint.textContent = left ? "เหลืออีก " + left + " ข้อในหน้านี้" : "";
+    }
+  }
+  // ตรวจว่าตอบครบทุกข้อในชุดรายการ · ไม่ครบ → แสดงข้อผิดพลาดและคืนข้อแรกที่ยังไม่ได้ตอบ
+  function firstMissing(kind, items, form) {
+    var bad = null;
+    items.forEach(function (it) {
+      if (answered(S[kind][it.id])) return;
+      var q = $('[data-q="' + it.id + '"]', form);
+      q.classList.add("invalid"); $(".field-error", q).hidden = false;
+      if (!bad) bad = q;
+    });
+    return bad;
   }
 
   ASSESS.forEach(function (kind) {
@@ -468,16 +592,18 @@
       var q = e.target.closest(".q"); if (q) { q.classList.remove("invalid"); $(".field-error", q).hidden = true; }
       updateCount(kind);
     });
+    form.addEventListener("click", function (e) {
+      if (e.target.closest("[data-page-prev]")) return showPage(kind, (aPage[kind] || 0) - 1, true);
+      if (e.target.closest("[data-page-next]")) {
+        var bad = firstMissing(kind, pageItems(kind, aPage[kind] || 0), form);
+        if (bad) return focusBad(bad);
+        showPage(kind, (aPage[kind] || 0) + 1, true);
+      }
+    });
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      var bad = null;
-      D[kind].items.forEach(function (it) {
-        if (answered(S[kind][it.id])) return;
-        var q = $('[data-q="' + it.id + '"]', form);
-        q.classList.add("invalid"); $(".field-error", q).hidden = false;
-        if (!bad) bad = q;
-      });
-      if (bad) return focusBad(bad);
+      var bad = firstMissing(kind, D[kind].items, form);
+      if (bad) { showPage(kind, Number(bad.getAttribute("data-page")), false); return focusBad(bad); }
       if (kind === "hlpre") { S.hlPreCompleted = true; save(); return go("pre"); }
       if (kind === "pre") { S.preCompleted = true; save(); return go("content"); }
       if (kind === "hlpost") { S.hlPostCompleted = true; save(); return submitStage1($('button[type="submit"]', form)); }
@@ -532,7 +658,7 @@
     $("#tabs").innerHTML = D.sections.map(function (s, i) {
       var read = S.read.indexOf(s.id) > -1;
       return '<button type="button" class="tab' + (read ? " is-read" : "") + '" role="tab" id="tab-' + s.id + '" aria-controls="topic" aria-selected="' + (i === S.topic) + '" tabindex="' + (i === S.topic ? 0 : -1) + '" data-i="' + i + '">' +
-        '<span aria-hidden="true">' + s.icon + "</span>" + esc(s.title) + (read ? '<span class="done" aria-label="อ่านแล้ว">✓</span>' : "") + "</button>";
+        icon(TOPIC_ICON[s.id]) + "<span>" + esc(s.title) + "</span>" + (read ? '<span class="done" aria-label="อ่านแล้ว">✓</span>' : "") + "</button>";
     }).join("");
     showTopic(S.topic, false);
     renderExternal();
@@ -540,7 +666,9 @@
 
   function updateContentFoot() {
     var nRead = S.read.length, total = D.sections.length, all = allTopicsRead(), btn = $("#btnToPost"), hint = $("#contentHint");
-    $("#readCount").textContent = "อ่านแล้ว " + Math.min(nRead, total) + " / " + total + " หัวข้อ";
+    $("#readCount").textContent = "อ่านแล้ว " + Math.min(nRead, total) + " จาก " + total + " หัวข้อ";
+    $("#readBar").style.width = (Math.min(nRead, total) / total * 100) + "%";
+    updateNav();
     if (!S.preCompleted) {
       btn.disabled = false; btn.textContent = S.id ? "ไปทำแบบประเมินก่อนเรียน" : "เริ่มทำแบบประเมิน";
       hint.textContent = "อ่านเนื้อหาได้ตลอด แต่การเข้าร่วมวิจัยต้องเริ่มจากแบบประเมินก่อนเรียน";
@@ -590,7 +718,10 @@
     var topic = $("#topic");
     topic.setAttribute("aria-labelledby", "tab-" + s.id);
     var photo = s.photo ? '<figure class="photo"><img src="' + s.photo.src + '" alt="' + esc(s.photo.alt) + '" loading="lazy"><figcaption>' + esc(s.photo.caption) + (s.photo.credit ? '<span class="photo-credit">ที่มาภาพ: ' + esc(s.photo.credit) + (s.photo.creditUrl ? ' <a href="' + s.photo.creditUrl + '" target="_blank" rel="noopener">' + esc(s.photo.creditUrl.replace(/^https?:\/\//, "").split("/")[0]) + "</a>" : "") + "</span>" : "") + "</figcaption></figure>" : "";
-    topic.innerHTML = '<h3><span aria-hidden="true">' + s.icon + "</span>" + esc(s.title) + "</h3>" + photo + s.html + fig + video + '<div class="topic-nav">' + prev + next + "</div>";
+    if (window.Germ3D) window.Germ3D.unmountAll();
+    var germ = window.Germ3D && CFG.GERM3D !== false && s.id === (CFG.GERM3D_TOPIC || "cause") ? '<div class="germ" data-germ></div>' : "";
+    topic.innerHTML = '<h3><span class="h-ic">' + icon(TOPIC_ICON[s.id]) + "</span>" + esc(s.title) + "</h3>" + germ + photo + s.html + fig + video + '<div class="topic-nav">' + prev + next + "</div>";
+    if (germ) window.Germ3D.mount($("[data-germ]", topic));
     updateContentFoot();
     var ra = $("#readAlert");
     if (!ra.hidden) { if (allTopicsRead()) ra.hidden = true; else { var li = $('[data-topic="' + i + '"]', ra); if (li) li.closest("li").remove(); } }
@@ -603,18 +734,18 @@
   function renderExternal() {
     $("#externalMedia").innerHTML = '<h3>อินโฟกราฟิกและสื่อจากหน่วยงาน</h3><p class="muted">กดเพื่อเปิดดูจากเว็บไซต์ต้นทางในแท็บใหม่</p><div class="media-list">' +
       D.externalMedia.map(function (m) {
-        return '<a class="media-item" href="' + m.url + '" target="_blank" rel="noopener"><span class="mi-icon" aria-hidden="true">📄</span>' +
-          "<span><strong>" + esc(m.title) + "</strong><small>" + esc(m.source) + " · " + esc(m.note) + '</small></span><span class="ext" aria-hidden="true">↗</span></a>';
+        return '<a class="media-item" href="' + m.url + '" target="_blank" rel="noopener"><span class="mi-icon" aria-hidden="true"><svg class="icon"><use href="#i-file"/></svg></span>' +
+          "<span><strong>" + esc(m.title) + "</strong><small>" + esc(m.source) + " · " + esc(m.note) + '<span class="sr"> (เปิดในแท็บใหม่)</span></small></span><span class="ext" aria-hidden="true"><svg class="icon icon-sm"><use href="#i-ext"/></svg></span></a>';
       }).join("") + "</div>";
   }
 
   $("#tabs").addEventListener("click", function (e) { var t = e.target.closest(".tab"); if (t) showTopic(Number(t.getAttribute("data-i")), true); });
   $("#tabs").addEventListener("keydown", function (e) {
-    if (["ArrowRight", "ArrowLeft", "Home", "End"].indexOf(e.key) === -1) return;
+    if (["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Home", "End"].indexOf(e.key) === -1) return;
     e.preventDefault();
     var n = D.sections.length, i = S.topic;
-    if (e.key === "ArrowRight") i = (i + 1) % n;
-    if (e.key === "ArrowLeft") i = (i - 1 + n) % n;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") i = (i + 1) % n;
+    if (e.key === "ArrowLeft" || e.key === "ArrowUp") i = (i - 1 + n) % n;
     if (e.key === "Home") i = 0;
     if (e.key === "End") i = n - 1;
     showTopic(i, false); $("#tab-" + D.sections[i].id).focus();
@@ -706,7 +837,7 @@
     el.setAttribute("aria-labelledby", "stab-" + d.id);
     el.innerHTML =
       '<header class="sk-head"><p class="sk-kicker">ด้านที่ ' + d.n + " จาก " + D.hlDomains.length + " · " + esc(d.en) + "</p>" +
-      '<h3><span aria-hidden="true">' + d.icon + "</span> " + esc(d.title) + "</h3>" +
+      '<h3><span class="h-ic">' + icon(SKILL_ICON[d.id]) + "</span>" + esc(d.title) + "</h3>" +
       '<p class="sk-goal">' + esc(d.goal) + "</p>" + tabs + "</header>" +
       body + '<div class="topic-nav sk-actions">' + actions + "</div>";
     updateSkillsFoot();
@@ -719,7 +850,8 @@
   function updateSkillsFoot() {
     var sa = $("#skillsAlert"); if (sa && !sa.hidden) { if (allSkillsDone()) sa.hidden = true; else showSkillsAlertQuiet(); }
     var n = D.hlDomains.filter(skillDone).length, total = D.hlDomains.length, btn = $("#btnSkillsDone"), hint = $("#skillsHint");
-    $("#skillCount").textContent = "ทำครบแล้ว " + n + " / " + total + " ด้าน";
+    $("#skillCount").textContent = "ทำครบแล้ว " + n + " จาก " + total + " ด้าน";
+    updateNav();
     $$("#skillTabs .sk-step").forEach(function (t, j) {
       var done = skillDone(D.hlDomains[j]); t.classList.toggle("is-done", done);
       $(".sk-dot", t).textContent = done ? "✓" : D.hlDomains[j].n;
@@ -853,7 +985,7 @@
         return;
       }
       if (!LOCK) {
-        card.innerHTML = '<p class="eyebrow">บันทึกครั้งที่ 1 เรียบร้อย</p><h2>ทำแบบประเมินหลังเรียนได้เลย</h2><p>ท่านทำแบบประเมินพฤติกรรมการป้องกันความเสี่ยงการเกิดโรคซิฟิลิส (หลังเข้าร่วมโปรแกรม) ' + D.post.items.length + ' ข้อ ได้ทันที ใช้เวลาประมาณ ' + esc(CFG.DURATION_POST_MIN || "15") + ' นาที</p>' +
+        card.innerHTML = '<div class="ok-mark"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></div>' + '<p class="eyebrow">บันทึกครั้งที่ 1 เรียบร้อย</p><h2>ทำแบบประเมินหลังเรียนได้เลย</h2><p>ท่านทำแบบประเมินพฤติกรรมการป้องกันความเสี่ยงการเกิดโรคซิฟิลิส (หลังเข้าร่วมโปรแกรม) ' + D.post.items.length + ' ข้อ ได้ทันที ใช้เวลาประมาณ ' + esc(CFG.DURATION_POST_MIN || "15") + ' นาที</p>' +
           '<div class="code-remind"><div><span>รหัสส่วนตัวของท่าน</span><strong id="myCode" data-shown="0">••••••</strong></div><button type="button" class="btn btn-ghost btn-sm" id="btnShowCode">แสดงรหัส</button></div>' +
           '<ul class="wait-notes"><li>🔑 ถ้าจะกลับมาทำภายหลัง กด "กลับมาทำแบบประเมินหลังเรียน" ที่หน้าแรก แล้วใส่รหัสส่วนตัว ใช้ได้จากทุกเครื่อง</li>' +
           '<li>📧 ระบบจะส่งอีเมลเตือนเมื่อครบ ' + WAIT_DAYS + ' วัน หากท่านยังไม่ได้ทำ</li></ul>' +
@@ -875,7 +1007,7 @@
         return;
       }
       card.innerHTML =
-        '<p class="eyebrow">บันทึกครั้งที่ 1 เรียบร้อย</p><h2>กลับมาทำแบบประเมินหลังเรียนอีกครั้ง</h2>' +
+        '<div class="ok-mark"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></div>' + '<p class="eyebrow">บันทึกครั้งที่ 1 เรียบร้อย</p><h2>กลับมาทำแบบประเมินหลังเรียนอีกครั้ง</h2>' +
         '<p class="muted">ทำได้ตั้งแต่</p><p class="unlock-date">' + fmtLong(S.unlockAt) + "</p>" +
         '<div class="code-remind"><div><span>รหัสส่วนตัวของท่าน</span><strong id="myCode" data-shown="0">••••••</strong></div><button type="button" class="btn btn-ghost btn-sm" id="btnShowCode">แสดงรหัส</button></div>' +
         '<ul class="wait-notes"><li>📧 ระบบจะส่งอีเมลเตือนเมื่อครบ 7 วัน (เช็กในกล่องจดหมายขยะด้วย)</li>' +
@@ -978,9 +1110,10 @@
     // กล่องคะแนน: ความรอบรู้แสดงคะแนนเฉลี่ย · พฤติกรรมแสดงคะแนนรวม (ตามเกณฑ์ของแต่ละแบบประเมิน)
     function scoreBox(label, r, cls, useTotal) {
       var badge = r.level ? '<span class="badge ' + r.level.key + '">' + r.level.label + "</span>" : '<span class="badge">ไม่มีข้อมูล</span>';
-      var big = useTotal ? (r.n ? r.total : "—") + " <small>/ " + bMax + "</small>" : (r.mean == null ? "—" : r.mean.toFixed(2)) + " <small>/ " + hlMax + "</small>";
+      var big = useTotal ? (r.n ? r.total : "—") + "<small>จาก " + bMax + "</small>" : (r.mean == null ? "—" : r.mean.toFixed(2)) + "<small>จาก " + hlMax + "</small>";
+      var pct = !r.n ? 0 : useTotal ? r.total / bMax * 100 : r.mean / hlMax * 100;
       var sub = !r.n ? "" : useTotal ? "คะแนนเฉลี่ยรายข้อ " + r.mean.toFixed(2) + " จาก " + D.scoreMax : "คะแนนรวม " + r.total + " จาก " + (r.n * hlMax) + " (" + r.n + " ข้อ)";
-      return '<div class="score ' + cls + '"><div class="s-label">' + label + '</div><div class="s-num">' + big + "</div>" + badge + '<div class="s-sub">' + sub + "</div></div>";
+      return '<div class="score ' + cls + '"><div class="s-label">' + label + '</div><div class="ring" style="--p:' + Math.round(pct) + '"><div><div class="s-num">' + big + "</div></div></div>" + badge + '<div class="s-sub">' + sub + "</div></div>";
     }
     function bar(label, val, max, cls, txt) {
       var w = val == null ? 0 : (val / max) * 100;
@@ -1003,17 +1136,17 @@
     }
     var hd = hlPre.mean != null && hlPost.mean != null ? Math.round((hlPost.mean - hlPre.mean) * 100) / 100 : null;
     var hlMain = hlPost.level || hlPre.level;
-    var hlHtml =
+    var hlHtml = '<section class="sum-block">' +
       '<h3 class="sum-h">1. ความรอบรู้ด้านสุขภาพเกี่ยวกับโรคซิฟิลิส</h3>' +
       '<p class="muted">คะแนนเฉลี่ย 1–' + hlMax + ' <strong>คะแนนยิ่งสูง ยิ่งมีความรอบรู้มาก</strong></p>' +
       '<div class="score-grid">' + scoreBox("ก่อนเข้าร่วมโปรแกรม", hlPre, "before", false) + scoreBox("หลังศึกษาเนื้อหา", hlPost, "after", false) + "</div>" +
       '<div class="bars">' + bar("ก่อน", hlPre.mean, hlMax, "before", hlPre.mean == null ? "—" : hlPre.mean.toFixed(2)) + bar("หลัง", hlPost.mean, hlMax, "after", hlPost.mean == null ? "—" : hlPost.mean.toFixed(2)) + "</div>" +
       changeLine(hd, "คะแนนความรอบรู้", function (x) { return x.toFixed(2); }) +
       (hlMain ? '<div class="advice ' + hlMain.key + '"><h4>ความรอบรู้ด้านสุขภาพ' + hlMain.label + "</h4><p>" + esc(hlMain.message) + "</p></div>" : "") +
-      criteriaTable(D.hlpre.levels, hlPre, hlPost, "คะแนนเฉลี่ย", "เกณฑ์การแปลผลความรอบรู้ด้านสุขภาพ (คะแนนเฉลี่ย 1–" + hlMax + ")");
+      criteriaTable(D.hlpre.levels, hlPre, hlPost, "คะแนนเฉลี่ย", "เกณฑ์การแปลผลความรอบรู้ด้านสุขภาพ (คะแนนเฉลี่ย 1–" + hlMax + ")") + "</section>";
     var bd = pre.n && post.n ? post.total - pre.total : null;
     var main = (final && post.level) || pre.level;
-    var bhHtml = '<h3 class="sum-h">2. พฤติกรรมการป้องกันความเสี่ยงการเกิดโรคซิฟิลิส</h3>' +
+    var bhHtml = '<section class="sum-block"><h3 class="sum-h">2. พฤติกรรมการป้องกันความเสี่ยงการเกิดโรคซิฟิลิส</h3>' +
       '<p class="muted">คะแนนรวม 0–' + bMax + ' <strong>คะแนนยิ่งสูง ยิ่งมีพฤติกรรมการป้องกันที่ดี</strong></p>' +
       (final
         ? '<div class="score-grid">' + scoreBox("ก่อนเข้าร่วมโปรแกรม", pre, "before", true) + scoreBox("หลังเข้าร่วมโปรแกรม", post, "after", true) + "</div>" +
@@ -1024,13 +1157,13 @@
       (main ? '<div class="advice ' + main.key + '"><h4>พฤติกรรมอยู่ใน' + main.label + "</h4><p>" + esc(main.message) + '</p><p class="tips-h">คำแนะนำ</p><ul>' +
         main.tips.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul></div>" : "") +
       criteriaTable(D.levels, pre, final ? post : {}, "คะแนนรวม", "เกณฑ์การแปลผลพฤติกรรม (คะแนนรวม 0–" + bMax + ")") +
-      '<p class="disclaimer">' + esc(D.disclaimer) + "</p>";
+      '<p class="disclaimer">' + esc(D.disclaimer) + "</p></section>";
     return hlHtml + bhHtml;
   }
 
   function renderSummary() {
     $("#summaryCard").innerHTML =
-      '<p class="eyebrow">ขั้นที่ 3 · ครั้งที่ 2 · สรุปผล</p><h2>ผลการประเมินของคุณ</h2>' + resultsHtml(true) +
+      '<header class="sum-head"><div><p class="eyebrow">ขั้นที่ 3 · ครั้งที่ 2 · สรุปผล</p><h2 class="page-title">ผลการประเมินของคุณ</h2><p class="page-sub">เทียบคะแนนก่อนและหลังเข้าร่วมโปรแกรม</p></div></header>' + resultsHtml(true) +
       '<div class="save-status ok">✓ บันทึกคำตอบทั้ง 2 ครั้งเรียบร้อยแล้ว</div>' +
       '<div class="actions"><button class="btn btn-ghost" type="button" data-nav="content">ทบทวนเนื้อหา</button><button class="btn btn-primary" type="button" id="btnToThanks">ไปต่อ</button></div>';
     $("#btnToThanks").addEventListener("click", function () { go("thanks"); });
@@ -1106,14 +1239,31 @@
   $("#lightboxClose").addEventListener("click", closeLightbox);
   lb.addEventListener("click", function (e) { if (e.target === lb) closeLightbox(); });
 
+  // ประเภทแหล่งอ้างอิง: ภาพประกอบ / ความรอบรู้และแบบประเมิน / เนื้อหาโรค
+  var REF_KIND = { d: "เนื้อหาโรค", h: "ความรอบรู้และแบบประเมิน", i: "ที่มาภาพ" }, refFilter = "all";
+  function refKind(r) { return /^ที่มาภาพ/.test(r.text) ? "i" : /ความรอบรู้|แบบประเมิน|กลุ่มตัวอย่าง/.test(r.used || "") ? "h" : "d"; }
   function renderSources() {
-    $("#refList").innerHTML = D.references.map(function (r) {
-      return "<li>" + esc(r.text) + (r.url ? ' <a href="' + r.url + '" target="_blank" rel="noopener">' + esc(r.url) + "</a>" : "") + (r.used ? "<small>ใช้ในหัวข้อ: " + esc(r.used) + "</small>" : "") + "</li>";
+    $("#refFilter").innerHTML = [["all", "ทั้งหมด"], ["d", REF_KIND.d], ["h", REF_KIND.h], ["i", REF_KIND.i]].map(function (f) {
+      return '<button type="button" class="chip-btn" data-ref-filter="' + f[0] + '" aria-pressed="' + (refFilter === f[0]) + '">' + f[1] + "</button>";
     }).join("");
+    var shown = 0;
+    $("#refList").innerHTML = D.references.map(function (r, i) {
+      var k = refKind(r); if (refFilter !== "all" && refFilter !== k) return "";
+      shown++;
+      return '<li data-n="' + (i + 1) + '"><div>' + esc(r.text) + (r.url ? ' <a href="' + r.url + '" target="_blank" rel="noopener">' + esc(r.url) + "</a>" : "") +
+        '<div class="ref-meta"><span class="ref-kind k-' + k + '">' + REF_KIND[k] + "</span>" + (r.used ? "<span>ใช้ในหัวข้อ: " + esc(r.used) + "</span>" : "") + "</div></div></li>";
+    }).join("");
+    $("#refCount").textContent = shown + " รายการ";
   }
+  $("#refFilter").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-ref-filter]"); if (!b) return;
+    refFilter = b.getAttribute("data-ref-filter"); renderSources();
+    var nb = $('[data-ref-filter="' + refFilter + '"]'); if (nb) nb.focus();
+  });
   $("#btnSourcesBack").addEventListener("click", function () { go(S.prevView && S.prevView !== "sources" ? S.prevView : "home"); });
 
   function renderView(v) {
+    if (v === "home") renderHomeTopics();
     if (v === "info") renderInfo();
     if (ASSESS.indexOf(v) > -1) renderAssess(v);
     if (v === "content") renderContent();

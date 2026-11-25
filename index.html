@@ -2,89 +2,192 @@
 <html lang="th">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>UBU Sex Education | รู้ทันซิฟิลิส ม.อุบลราชธานี</title>
   <meta name="description" content="UBU Sex Education เว็บไซต์ส่งเสริมความรอบรู้ด้านสุขภาพเรื่องโรคซิฟิลิส สาเหตุ การติดต่อ อาการ การรักษา การป้องกัน สำหรับนักศึกษามหาวิทยาลัยอุบลราชธานี">
-  <meta name="theme-color" content="#7E8C69">
+  <meta name="theme-color" content="#FAF7F4">
   <meta property="og:title" content="UBU Sex Education | รู้ทันซิฟิลิส ม.อุบลราชธานี">
   <meta property="og:description" content="เรียนรู้เรื่องโรคซิฟิลิสและประเมินพฤติกรรมป้องกันของตัวเอง">
   <meta property="og:type" content="website">
   <link rel="icon" href="assets/logo-nursing-ubu.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600;700&family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20261025-7">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Noto+Serif+Thai:wght@600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=20261125-1">
 </head>
 <body>
   <a class="skip" href="#main">ข้ามไปเนื้อหาหลัก</a>
-  <div class="deco" aria-hidden="true"><span class="d1"></span><span class="d2"></span><span class="d3"></span><span class="d4"></span><span class="d5"></span><span class="d6"></span></div>
 
-  <header class="topbar">
-    <div class="topbar-in">
-      <button class="brand" type="button" data-nav="home" aria-label="UBU Sex Education หน้าแรก">
-        <img class="brand-logo" src="assets/logo-nursing-ubu.svg" alt="" width="34" height="34">
-        <span>UBU Sex Education</span>
-      </button>
-      <nav class="nav" aria-label="เมนูหลัก">
-        <button type="button" data-nav="home">หน้าแรก</button>
-        <button type="button" data-nav="assess">แบบประเมิน</button>
-        <button type="button" data-nav="content">เนื้อหา</button>
-        <button type="button" data-nav="sources">แหล่งข้อมูล</button>
+  <!-- ไอคอนที่ใช้ทั้งเว็บ -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-consent" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 15l2 2 4-4"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10"/></symbol>
+    <symbol id="i-assess" viewBox="0 0 24 24"><path d="M9 4h6v3H9zM9 5H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-3M9 12h6M9 16h4"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 21a2 2 0 0 1 2-2h13v2H6"/></symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3"/></symbol>
+    <symbol id="i-check-clip" viewBox="0 0 24 24"><path d="M9 4h6v3H9zM9 5H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-3M9 14l2 2 4-4"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M4 6h16v15H4zM4 10h16M9 3v4M15 3v4"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1L12 21.5l8.8-8.8a5 5 0 0 0 0-7.1z"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><path d="M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-5M12 8h.01"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></symbol>
+    <symbol id="i-germ" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></symbol>
+    <symbol id="i-steth" viewBox="0 0 24 24"><path d="M6 3v6a4 4 0 0 0 8 0V3M10 13v3a5 5 0 0 0 10 0v-2M20 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3"/></symbol>
+    <symbol id="i-tube" viewBox="0 0 24 24"><path d="M9 3h6M10 3v13a2 2 0 0 0 4 0V3M10 10h4"/></symbol>
+    <symbol id="i-pill" viewBox="0 0 24 24"><path d="M10.5 3.5a5 5 0 0 1 7 7l-7 7a5 5 0 0 1-7-7zM7 7l7 7"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 4 13c0-6 6-10 16-10 0 10-4 17-9 17zM4 21c3-5 6-8 10-10"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.7 7.1L4 20.5l1.4-4.8A8 8 0 1 1 21 12zM8.5 12h.01M12 12h.01M15.5 12h.01"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM11 18h2"/></symbol>
+    <symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18M7 21h10M4 7h16M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5"/></symbol>
+    <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  </svg>
+
+  <div class="shell">
+    <!-- แถบเมนูซ้าย (บนมือถือเป็นเมนูเลื่อนออกมาจากด้านข้าง) -->
+    <aside class="sidebar" id="sidebar" aria-label="เมนูหลัก">
+      <div class="side-head">
+        <button class="brand" type="button" data-nav="home" aria-label="UBU Sex Education หน้าแรก">
+          <img class="brand-logo" src="assets/logo-nursing-ubu.svg" alt="" width="38" height="38">
+          <span class="brand-t"><strong>UBU Sex Education</strong><small>รู้ทันซิฟิลิส · ม.อุบลราชธานี</small></span>
+        </button>
+        <button class="icon-btn side-close" type="button" id="btnNavClose" aria-label="ปิดเมนู"><svg class="icon"><use href="#i-x"/></svg></button>
+      </div>
+      <nav class="snav" aria-label="ขั้นตอนการเข้าร่วม">
+        <div class="snav-group">
+          <span class="snav-label">เริ่มต้น</span>
+          <button type="button" class="snav-item" data-nav="home"><svg class="icon"><use href="#i-home"/></svg><span>หน้าแรก</span><span class="snav-badge"></span></button>
+          <button type="button" class="snav-item" data-nav="consent"><svg class="icon"><use href="#i-consent"/></svg><span>คำชี้แจงและยินยอม</span><span class="snav-badge"></span></button>
+          <button type="button" class="snav-item" data-nav="info"><svg class="icon"><use href="#i-user"/></svg><span>ข้อมูลส่วนบุคคล</span><span class="snav-badge"></span></button>
+        </div>
+        <div class="snav-group">
+          <span class="snav-label">ครั้งที่ 1</span>
+          <button type="button" class="snav-item" data-nav="assess"><svg class="icon"><use href="#i-assess"/></svg><span>แบบประเมินก่อนเรียน</span><span class="snav-badge"></span></button>
+          <button type="button" class="snav-item" data-nav="content"><svg class="icon"><use href="#i-book"/></svg><span>เนื้อหา 9 หัวข้อ</span><span class="snav-badge"></span></button>
+          <button type="button" class="snav-item" data-nav="skills"><svg class="icon"><use href="#i-bulb"/></svg><span>ความรอบรู้ 6 ด้าน</span><span class="snav-badge"></span></button>
+          <button type="button" class="snav-item" data-nav="hlpost"><svg class="icon"><use href="#i-check-clip"/></svg><span>ประเมินหลังศึกษาเนื้อหา</span><span class="snav-badge"></span></button>
+        </div>
+        <div class="snav-group">
+          <span class="snav-label" id="snavStage2">ครั้งที่ 2</span>
+          <button type="button" class="snav-item" data-nav="post"><svg class="icon"><use href="#i-calendar"/></svg><span>แบบประเมินหลังเรียน</span><span class="snav-badge"></span></button>
+          <button type="button" class="snav-item" data-nav="summary"><svg class="icon"><use href="#i-chart"/></svg><span>ผลของฉัน</span><span class="snav-badge"></span></button>
+          <button type="button" class="snav-item" data-nav="thanks"><svg class="icon"><use href="#i-star"/></svg><span>ความพึงพอใจ</span><span class="snav-badge"></span></button>
+        </div>
+        <div class="snav-group">
+          <span class="snav-label">ข้อมูลโครงการ</span>
+          <button type="button" class="snav-item" data-nav="sources"><svg class="icon"><use href="#i-list"/></svg><span>แหล่งอ้างอิง</span><span class="snav-badge"></span></button>
+          <button type="button" class="snav-item" data-nav="ack"><svg class="icon"><use href="#i-heart"/></svg><span>กิตติกรรมประกาศ</span><span class="snav-badge"></span></button>
+        </div>
       </nav>
-    </div>
-    <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
-  </header>
-
-  <main id="main" tabindex="-1">
-
-    <!-- หน้าแรก -->
-    <section class="view" id="view-home" data-view="home">
-      <!-- หน้าแรกแบบรูปเต็มจอ: เปลี่ยนรูปได้ที่ HERO_IMAGE ใน config.js -->
-      <div class="hero-full">
-        <div class="hero-full-in">
-          <div class="org org-light">
-            <img src="assets/logo-nursing-ubu.svg" alt="ตราคณะพยาบาลศาสตร์ มหาวิทยาลัยอุบลราชธานี" width="60" height="60">
-            <span>คณะพยาบาลศาสตร์<br>มหาวิทยาลัยอุบลราชธานี</span>
-          </div>
-          <p class="hero-eyebrow">รู้ทันโรคซิฟิลิส</p>
-          <h1>UBU Sex Education</h1>
-          <p class="hero-tag">ส่งเสริมความรอบรู้ด้านสุขภาพ เพื่อป้องกันความเสี่ยงในการเกิดโรคซิฟิลิส</p>
-          <p class="hero-lead">ซิฟิลิสอาจไม่แสดงอาการ แต่ตรวจและรักษาได้ ลองประเมินความรอบรู้และพฤติกรรมของตัวเองก่อน อ่านเนื้อหา แล้วกลับมาประเมินอีกครั้งใน 1 สัปดาห์</p>
-          <div class="hero-actions">
-            <button class="btn btn-light btn-lg" type="button" id="btnStart">เริ่มต้น</button>
-            <button class="btn btn-outline-light btn-lg" type="button" id="btnReturn">กลับมาทำแบบประเมินหลังเรียน</button>
-          </div>
-          <p class="fine not-me" id="notMe" hidden>เครื่องนี้มีการทำค้างไว้ ถ้าไม่ใช่ของคุณ <button type="button" class="link" id="btnNotMe">เริ่มใหม่ในเครื่องนี้</button></p>
+      <div class="side-foot">
+        <div class="progress-card">
+          <div class="pc-top"><strong id="pcStage">ยังไม่เริ่ม</strong><span id="pcCount"></span></div>
+          <div class="bar" aria-hidden="true"><i id="progressBar"></i></div>
         </div>
-        <p class="hero-credit">ที่มาภาพ: Pinterest. (ม.ป.ป.). ภาพประกอบจาก Pinterest. <a href="https://pin.it/XLJsMyCVt" target="_blank" rel="noopener">https://pin.it/XLJsMyCVt</a></p>
-        <a class="scroll-hint" href="#homeMore" aria-label="เลื่อนลงเพื่อดูรายละเอียด"><span aria-hidden="true">⌄</span></a>
       </div>
+    </aside>
+    <div class="nav-overlay" id="navOverlay" hidden></div>
 
-      <div class="home-more" id="homeMore">
-        <div class="card home-intro">
-          <h2>ขั้นตอนการเรียนรู้</h2>
-          <p class="lead-sub">เว็บไซต์นี้พัฒนาขึ้นเพื่อส่งเสริมความรอบรู้ด้านสุขภาพเกี่ยวกับโรคซิฟิลิส และศึกษาผลของโปรแกรมต่อพฤติกรรมการป้องกันความเสี่ยงการเกิดโรคซิฟิลิสของนักศึกษามหาวิทยาลัยอุบลราชธานี ใช้เวลาครั้งแรกประมาณ <span data-cfg="DURATION_MIN"></span> นาที และกลับมาอีกครั้งหลัง 1 สัปดาห์ประมาณ <span data-cfg="DURATION_POST_MIN"></span> นาที</p>
-          <ol class="steps-mini">
-            <li>แบบประเมินความรอบรู้ 24 ข้อ และแบบประเมินพฤติกรรม 14 ข้อ (ก่อนเข้าร่วมโปรแกรม)</li>
-            <li>อ่านเนื้อหา 9 หัวข้อ ฝึกทักษะความรอบรู้ 6 ด้าน แล้วทำแบบประเมินความรอบรู้ 24 ข้ออีกครั้ง</li>
-            <li>รอ 1 สัปดาห์ แล้วทำแบบประเมินพฤติกรรม 14 ข้ออีกครั้ง (หลังเข้าร่วมโปรแกรม)</li>
-            <li>ดูผลของคุณ</li>
-          </ol>
-        </div>
-        <div class="pillars">
-          <div class="pillar"><span class="p-ic" aria-hidden="true">🧪</span><strong>ตรวจได้</strong><p>บางระยะไม่มีอาการ การตรวจช่วยค้นหาการติดเชื้อ</p></div>
-          <div class="pillar"><span class="p-ic" aria-hidden="true">💉</span><strong>รักษาได้</strong><p>การรักษาที่เหมาะสมขึ้นอยู่กับระยะของโรค</p></div>
-          <div class="pillar"><span class="p-ic" aria-hidden="true">🛡️</span><strong>ป้องกันได้</strong><p>ถุงยางอนามัยช่วยลดความเสี่ยง แต่ควรใช้ร่วมกับการตรวจตามความเสี่ยง</p></div>
-        </div>
-        <div class="credits card" data-credits></div>
-      </div>
-    </section>
+    <div class="app-col">
+      <!-- แถบบนสำหรับมือถือ -->
+      <header class="m-top">
+        <button class="brand" type="button" data-nav="home" aria-label="UBU Sex Education หน้าแรก">
+          <img class="brand-logo" src="assets/logo-nursing-ubu.svg" alt="" width="32" height="32">
+          <span class="brand-t"><strong>UBU Sex Education</strong></span>
+        </button>
+        <button class="icon-btn" type="button" id="btnMenu" aria-label="เปิดเมนู" aria-controls="sidebar" aria-expanded="false"><svg class="icon"><use href="#i-menu"/></svg></button>
+      </header>
 
-    <!-- หน้ายินยอม -->
-    <section class="view" id="view-consent" data-view="consent" hidden>
-      <div class="card narrow">
-        <p class="eyebrow">ขั้นที่ 1 · ครั้งที่ 1 · การยินยอม</p>
-        <h2>เอกสารชี้แจงผู้เข้าร่วมการวิจัย</h2>
+      <main id="main" class="main" tabindex="-1">
+
+        <!-- หน้าแรก -->
+        <section class="view home" id="view-home" data-view="home">
+          <div class="home-intro">
+            <div class="home-copy">
+              <p class="kicker">คณะพยาบาลศาสตร์ มหาวิทยาลัยอุบลราชธานี</p>
+              <h1 class="home-title">รู้ทันโรคซิฟิลิส<br><span>ตรวจได้ รักษาได้ ป้องกันได้</span></h1>
+              <p class="home-lede">ซิฟิลิสอาจไม่แสดงอาการ แต่ตรวจและรักษาได้ ลองประเมินความรอบรู้และพฤติกรรมของตัวเองก่อน อ่านเนื้อหา แล้วกลับมาประเมินอีกครั้งใน 1 สัปดาห์</p>
+              <ol class="home-steps">
+                <li><b>01</b><div><strong>ประเมินก่อนเรียน</strong><span>แบบประเมินความรอบรู้ 24 ข้อ และแบบประเมินพฤติกรรม 14 ข้อ</span></div></li>
+                <li><b>02</b><div><strong>เรียนเนื้อหา</strong><span>โรคซิฟิลิส 9 หัวข้อ ฝึกทักษะความรอบรู้ 6 ด้าน แล้วประเมินความรอบรู้อีกครั้ง</span></div></li>
+                <li><b>03</b><div><strong>กลับมาอีกครั้งใน 1 สัปดาห์</strong><span>แบบประเมินพฤติกรรม 14 ข้อ ระบบส่งอีเมลเตือนให้</span></div></li>
+                <li><b>04</b><div><strong>ดูผลของคุณ</strong><span>เทียบคะแนนก่อนและหลังเข้าร่วมโปรแกรม</span></div></li>
+              </ol>
+              <div class="home-actions">
+                <button class="btn btn-primary btn-lg" type="button" id="btnStart">เริ่มต้น</button>
+                <button class="btn btn-secondary btn-lg" type="button" id="btnReturn">กลับมาทำแบบประเมินหลังเรียน</button>
+              </div>
+              <p class="fine">ครั้งแรกใช้เวลาประมาณ <span data-cfg="DURATION_MIN"></span> นาที · ครั้งที่ 2 ประมาณ <span data-cfg="DURATION_POST_MIN"></span> นาที · ทำค้างไว้แล้วกลับมาทำต่อได้</p>
+              <p class="fine not-me" id="notMe" hidden>เครื่องนี้มีการทำค้างไว้ ถ้าไม่ใช่ของคุณ <button type="button" class="link" id="btnNotMe">เริ่มใหม่ในเครื่องนี้</button></p>
+            </div>
+            <!-- เปลี่ยนรูปได้ที่ HERO_IMAGE ใน config.js -->
+            <figure class="home-figure">
+              <div class="home-frame">
+                <img id="heroImg" src="assets/img/home.jpg" alt="บุคลากรทางการแพทย์กำลังจดบันทึกบนแฟ้มประวัติผู้ป่วย">
+                <span class="home-tag">ภาพประกอบ</span>
+              </div>
+              <figcaption>
+                <span>ข้อมูลของคุณใช้เพื่อการวิจัยเท่านั้น</span>
+                <span class="hero-credit">ที่มาภาพ: Pinterest. (ม.ป.ป.). <a href="https://pin.it/XLJsMyCVt" target="_blank" rel="noopener">pin.it/XLJsMyCVt</a></span>
+              </figcaption>
+            </figure>
+          </div>
+
+          <section class="home-sec">
+            <div class="section-head">
+              <h2>เนื้อหาที่จะได้เรียน</h2>
+              <button type="button" class="section-link" data-nav="content">ดูเนื้อหาทั้งหมด <svg class="icon icon-sm"><use href="#i-arrow"/></svg></button>
+            </div>
+            <div class="topic-grid" id="homeTopics"></div>
+          </section>
+
+          <section class="home-sec">
+            <div class="section-head"><h2>ก่อนเริ่ม ควรรู้ไว้</h2></div>
+            <div class="home-tools">
+              <button type="button" class="home-feature" data-topic-id="symptoms">
+                <span class="home-feature-img"><img src="assets/img/prevention-2.jpg" alt="แพทย์กำลังพูดคุยให้คำปรึกษากับผู้รับบริการ" loading="lazy"></span>
+                <span class="hf-title">ไม่มีอาการ ไม่ได้แปลว่าไม่ติด</span>
+                <span class="hf-text">ซิฟิลิสมีระยะแฝงที่ไม่มีอาการได้นานหลายปี การไม่มีแผลหรือผื่นจึงไม่ได้แปลว่าไม่ติดเชื้อ ต้องตรวจเลือดจึงจะทราบ</span>
+                <span class="section-link">อ่านเรื่องอาการแต่ละระยะ <svg class="icon icon-sm"><use href="#i-arrow"/></svg></span>
+              </button>
+              <div class="index-list">
+                <button type="button" class="index-row" data-topic-id="diagnosis"><svg class="icon"><use href="#i-tube"/></svg><span><strong>ตรวจได้</strong><span>บางระยะไม่มีอาการ การตรวจช่วยค้นหาการติดเชื้อ</span></span><svg class="icon icon-sm"><use href="#i-arrow"/></svg></button>
+                <button type="button" class="index-row" data-topic-id="treatment"><svg class="icon"><use href="#i-pill"/></svg><span><strong>รักษาได้</strong><span>การรักษาที่เหมาะสมขึ้นอยู่กับระยะของโรค</span></span><svg class="icon icon-sm"><use href="#i-arrow"/></svg></button>
+                <button type="button" class="index-row" data-topic-id="prevention"><svg class="icon"><use href="#i-shield"/></svg><span><strong>ป้องกันได้</strong><span>ถุงยางอนามัยช่วยลดความเสี่ยง แต่ควรใช้ร่วมกับการตรวจตามความเสี่ยง</span></span><svg class="icon icon-sm"><use href="#i-arrow"/></svg></button>
+                <button type="button" class="index-row" data-nav="consent"><svg class="icon"><use href="#i-lock"/></svg><span><strong>ไม่เก็บชื่อ ไม่เก็บรหัสนักศึกษา</strong><span>ใช้รหัสส่วนตัวที่คุณตั้งเอง อีเมลถูกลบหลังส่งการแจ้งเตือน</span></span><svg class="icon icon-sm"><use href="#i-arrow"/></svg></button>
+              </div>
+            </div>
+          </section>
+
+          <section class="home-sec">
+            <div class="credits" data-credits></div>
+          </section>
+        </section>
+
+        <!-- หน้ายินยอม -->
+        <section class="view" id="view-consent" data-view="consent" hidden>
+          <div class="split">
+            <div class="split-visual" aria-hidden="true">
+              <img src="assets/img/prevention-2.jpg" alt="">
+              <div class="split-copy">
+                <p class="split-title">ก่อนเริ่ม<br>อ่านสิ่งที่คุณจะได้ทำ</p>
+                <p>งานวิจัยนี้แบ่งเป็น 2 ครั้ง ห่างกัน 1 สัปดาห์ เข้าร่วมด้วยความสมัครใจ ถอนตัวได้ทุกเมื่อ</p>
+              </div>
+            </div>
+            <div class="split-panel">
+              <p class="eyebrow">ขั้นที่ 1 · ครั้งที่ 1 · การยินยอม</p>
+              <h2 class="page-title">เอกสารชี้แจงผู้เข้าร่วมการวิจัย</h2>
         <div class="doc">
           <p><strong>ชื่อโครงการ</strong> ผลของโปรแกรมส่งเสริมความรอบรู้ด้านสุขภาพผ่านเว็บไซต์ต่อพฤติกรรมการป้องกันความเสี่ยงการเกิดโรคซิฟิลิสของนักศึกษามหาวิทยาลัยอุบลราชธานี</p>
           <p><strong>ผู้วิจัย</strong> คณะผู้จัดทำ</p>
@@ -104,226 +207,270 @@
           <p><strong>ติดต่อสอบถาม</strong> <span data-cfg="CONTACT_NAME"></span><span data-cfg-wrap="CONTACT_PHONE"> โทร <span data-cfg="CONTACT_PHONE"></span></span> อีเมล <a data-cfg="CONTACT_EMAIL" data-mailto></a><br>
              โครงการนี้ได้รับการรับรองจากคณะกรรมการจริยธรรมการวิจัยในมนุษย์ มหาวิทยาลัยอุบลราชธานี เลขที่ <span data-cfg="ETHICS_NO"></span></p>
         </div>
-        <label class="check">
-          <input type="checkbox" id="consentRead">
-          <span>ข้าพเจ้าได้อ่านและเข้าใจรายละเอียดข้างต้นแล้ว ยินยอมเข้าร่วมการวิจัยด้วยความสมัครใจ</span>
-        </label>
-        <p class="field-error" id="consentErr" hidden>กรุณาติ๊กช่องด้านบนก่อนกด “ยินยอม”</p>
-        <div class="actions">
-          <button class="btn btn-ghost" type="button" id="btnDecline">ไม่ยินยอม</button>
-          <button class="btn btn-primary" type="button" id="btnAccept">ยินยอม</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ข้อมูลทั่วไป -->
-    <section class="view" id="view-info" data-view="info" hidden>
-      <form class="card narrow" id="infoForm" novalidate>
-        <p class="eyebrow">ขั้นที่ 2 · ครั้งที่ 1 · ข้อมูลทั่วไป</p>
-        <h2>ส่วนที่ 1 ข้อมูลส่วนบุคคล</h2>
-        <p><strong>คำชี้แจง</strong> โปรดคลิกเลือกลงในช่องและกรอกข้อมูลตามความเป็นจริง</p>
-        <p class="muted">ไม่มีการเก็บชื่อหรือรหัสนักศึกษา</p>
-        <div id="infoFields"></div>
-
-        <div class="code-box">
-          <h3>ตั้งรหัสส่วนตัว</h3>
-          <p class="muted">ใช้สำหรับกลับมาทำแบบประเมินหลังเรียนในอีก 1 สัปดาห์ <strong>ต้องมีทั้งตัวอักษรและตัวเลข</strong> ยาว 6–20 ตัว ไม่มีช่องว่าง เช่น <code>mint2547</code> หรือ <code>ข้าวหอม99</code> กรุณาจดหรือแคปหน้าจอเก็บไว้</p>
-          <div class="field" data-field="code">
-            <label class="lbl" for="f_code">รหัสส่วนตัว<span class="req" aria-hidden="true">*</span></label>
-            <input class="text-in" type="text" id="f_code" name="code" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="20" aria-describedby="codeRules">
-            <ul class="rules" id="codeRules" aria-live="polite">
-              <li data-rule="len">ยาว 6–20 ตัว</li>
-              <li data-rule="letter">มีตัวอักษรอย่างน้อย 1 ตัว</li>
-              <li data-rule="digit">มีตัวเลขอย่างน้อย 1 ตัว</li>
-              <li data-rule="space">ไม่มีช่องว่าง</li>
-            </ul>
-            <p class="field-error" hidden></p>
+              <p class="fine doc-hint">เลื่อนในกรอบเพื่ออ่านให้ครบ</p>
+              <label class="check">
+                <input type="checkbox" id="consentRead">
+                <span>ข้าพเจ้าได้อ่านและเข้าใจรายละเอียดข้างต้นแล้ว ยินยอมเข้าร่วมการวิจัยด้วยความสมัครใจ</span>
+              </label>
+              <p class="field-error" id="consentErr" hidden>กรุณาติ๊กช่องด้านบนก่อนกด “ยินยอม”</p>
+              <div class="actions">
+                <button class="btn btn-ghost" type="button" id="btnDecline">ไม่ยินยอม</button>
+                <button class="btn btn-primary" type="button" id="btnAccept">ยินยอม และไปต่อ</button>
+              </div>
+            </div>
           </div>
-          <div class="field" data-field="code2">
-            <label class="lbl" for="f_code2">ยืนยันรหัสส่วนตัว<span class="req" aria-hidden="true">*</span></label>
-            <input class="text-in" type="text" id="f_code2" name="code2" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="20">
-            <p class="field-error" hidden>รหัสทั้งสองช่องไม่ตรงกัน</p>
+        </section>
+
+        <!-- ข้อมูลทั่วไป -->
+        <section class="view" id="view-info" data-view="info" hidden>
+          <div class="page">
+            <header class="page-header">
+              <div>
+                <p class="eyebrow">ขั้นที่ 2 · ครั้งที่ 1 · ข้อมูลทั่วไป</p>
+                <h2 class="page-title">ข้อมูลส่วนบุคคล</h2>
+                <p class="page-sub">โปรดคลิกเลือกและกรอกข้อมูลตามความเป็นจริง ไม่มีการเก็บชื่อหรือรหัสนักศึกษา</p>
+              </div>
+            </header>
+            <form class="info-grid" id="infoForm" novalidate>
+              <div class="card card-pad info-main">
+                <h3 class="card-title">ส่วนที่ 1 ข้อมูลส่วนบุคคล</h3>
+                <div id="infoFields"></div>
+              </div>
+              <div class="info-side">
+                <div class="card card-pad code-box">
+                  <h3 class="card-title">ตั้งรหัสส่วนตัว</h3>
+                  <p class="muted">ใช้สำหรับกลับมาทำแบบประเมินหลังเรียนในอีก 1 สัปดาห์ <strong>ต้องมีทั้งตัวอักษรและตัวเลข</strong> ยาว 6–20 ตัว ไม่มีช่องว่าง เช่น <code>mint2547</code> หรือ <code>ข้าวหอม99</code></p>
+                  <div class="field" data-field="code">
+                    <label class="lbl" for="f_code">รหัสส่วนตัว<span class="req" aria-hidden="true">*</span></label>
+                    <input class="text-in" type="text" id="f_code" name="code" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="20" aria-describedby="codeRules">
+                    <ul class="rules" id="codeRules" aria-live="polite">
+                      <li data-rule="len">ยาว 6–20 ตัว</li>
+                      <li data-rule="letter">มีตัวอักษรอย่างน้อย 1 ตัว</li>
+                      <li data-rule="digit">มีตัวเลขอย่างน้อย 1 ตัว</li>
+                      <li data-rule="space">ไม่มีช่องว่าง</li>
+                    </ul>
+                    <p class="field-error" hidden></p>
+                  </div>
+                  <div class="field" data-field="code2">
+                    <label class="lbl" for="f_code2">ยืนยันรหัสส่วนตัว<span class="req" aria-hidden="true">*</span></label>
+                    <input class="text-in" type="text" id="f_code2" name="code2" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="20">
+                    <p class="field-error" hidden>รหัสทั้งสองช่องไม่ตรงกัน</p>
+                  </div>
+                  <div class="notice notice-warn"><svg class="icon"><use href="#i-info"/></svg><span>จดหรือแคปหน้าจอรหัสไว้ ระบบตั้งรหัสใหม่ให้ไม่ได้ เพราะเราไม่เก็บชื่อของคุณ</span></div>
+                </div>
+                <div class="card card-pad">
+                  <div class="field" data-field="email">
+                    <label class="lbl" for="f_email">อีเมลสำหรับแจ้งเตือนเมื่อครบ 7 วัน<span class="req" aria-hidden="true">*</span></label>
+                    <input class="text-in" type="email" id="f_email" name="email" autocomplete="email" inputmode="email" placeholder="name@example.com">
+                    <p class="hint">ใช้ส่งการแจ้งเตือนครั้งเดียว และลบออกจากระบบทันทีหลังส่ง ไม่เก็บรวมกับคำตอบ</p>
+                    <p class="field-error" hidden>กรุณากรอกอีเมลให้ถูกต้อง</p>
+                  </div>
+                </div>
+                <label class="check consent-final">
+                  <input type="checkbox" name="consent_final" id="consentFinal">
+                  <span><strong>ฉันยินยอม</strong>ให้ใช้ข้อมูลและคำตอบของฉันเพื่อการวิจัยครั้งนี้</span>
+                </label>
+                <p class="field-error" id="consentFinalErr" hidden>กรุณาติ๊ก “ฉันยินยอม” เพื่อไปต่อ</p>
+                <button class="btn btn-primary btn-lg btn-block" type="submit">ไปแบบประเมินก่อนเรียน</button>
+                <p class="fine center">ถัดไป: แบบประเมินความรอบรู้ด้านสุขภาพ 24 ข้อ</p>
+              </div>
+            </form>
           </div>
-          <div class="field" data-field="email">
-            <label class="lbl" for="f_email">อีเมลสำหรับแจ้งเตือนเมื่อครบ 7 วัน<span class="req" aria-hidden="true">*</span></label>
-            <input class="text-in" type="email" id="f_email" name="email" autocomplete="email" inputmode="email" placeholder="name@example.com">
-            <p class="hint">ใช้ส่งการแจ้งเตือนครั้งเดียว และลบออกจากระบบทันทีหลังส่ง ไม่เก็บรวมกับคำตอบ</p>
-            <p class="field-error" hidden>กรุณากรอกอีเมลให้ถูกต้อง</p>
+        </section>
+
+        <!-- ครั้งที่ 1 ชุดที่ 1: แบบประเมินความรอบรู้ก่อนเข้าร่วมโปรแกรม -->
+        <section class="view" id="view-hlpre" data-view="hlpre" hidden>
+          <form class="assess" id="hlpreForm" novalidate></form>
+        </section>
+
+        <!-- ครั้งที่ 1 ชุดที่ 2: แบบประเมินพฤติกรรมก่อนเข้าร่วมโปรแกรม -->
+        <section class="view" id="view-pre" data-view="pre" hidden>
+          <form class="assess" id="preForm" novalidate></form>
+        </section>
+
+        <!-- เนื้อหา -->
+        <section class="view" id="view-content" data-view="content" hidden>
+          <div class="page">
+            <header class="page-header">
+              <div>
+                <p class="eyebrow">ขั้นที่ 5 · ครั้งที่ 1 · เนื้อหา</p>
+                <h2 class="page-title">รู้ทันซิฟิลิส</h2>
+                <p class="page-sub" id="contentHint">อ่านให้ครบทั้ง 9 หัวข้อ แล้วกดปุ่มด้านล่างเพื่อไปเนื้อหาความรอบรู้ด้านสุขภาพ 6 ด้าน</p>
+              </div>
+              <div class="meter">
+                <p class="read-count" id="readCount"></p>
+                <div class="bar" aria-hidden="true"><i id="readBar"></i></div>
+              </div>
+            </header>
+            <div class="content-grid">
+              <div class="tabs" role="tablist" aria-label="หัวข้อเนื้อหา" aria-orientation="vertical" id="tabs"></div>
+              <article class="card topic" id="topic" role="tabpanel" tabindex="-1"></article>
+            </div>
+            <div class="media-card" id="externalMedia"></div>
+            <div class="content-foot card">
+              <div class="read-alert" id="readAlert" role="alert" hidden></div>
+              <div class="foot-btns">
+                <button class="btn btn-secondary" type="button" id="btnToSkills" hidden>ความรอบรู้ 6 ด้าน →</button>
+                <button class="btn btn-primary" type="button" id="btnToPost">อ่านครบแล้ว ไปเนื้อหาความรอบรู้ 6 ด้าน</button>
+              </div>
+            </div>
           </div>
-        </div>
+        </section>
 
-        <label class="check consent-final">
-          <input type="checkbox" name="consent_final" id="consentFinal">
-          <span><strong>ฉันยินยอม</strong>ให้ใช้ข้อมูลและคำตอบของฉันเพื่อการวิจัยครั้งนี้</span>
-        </label>
-        <p class="field-error" id="consentFinalErr" hidden>กรุณาติ๊ก “ฉันยินยอม” เพื่อไปต่อ</p>
-        <div class="actions">
-          <button class="btn btn-primary" type="submit">ไปแบบประเมินก่อนเรียน</button>
-        </div>
-      </form>
-    </section>
-
-    <!-- ครั้งที่ 1 ชุดที่ 1: แบบประเมินความรอบรู้ก่อนเข้าร่วมโปรแกรม -->
-    <section class="view" id="view-hlpre" data-view="hlpre" hidden>
-      <form class="card narrow" id="hlpreForm" novalidate></form>
-    </section>
-
-    <!-- ครั้งที่ 1 ชุดที่ 2: แบบประเมินพฤติกรรมก่อนเข้าร่วมโปรแกรม -->
-    <section class="view" id="view-pre" data-view="pre" hidden>
-      <form class="card narrow" id="preForm" novalidate></form>
-    </section>
-
-    <!-- เนื้อหา -->
-    <section class="view" id="view-content" data-view="content" hidden>
-      <div class="content-wrap">
-        <div class="content-head">
-          <p class="eyebrow">ขั้นที่ 5 · ครั้งที่ 1 · เนื้อหา</p>
-          <h2>รู้ทันซิฟิลิส</h2>
-          <p class="muted" id="contentHint">อ่านให้ครบทั้ง 9 หัวข้อ แล้วกดปุ่มด้านล่างเพื่อไปเนื้อหาความรอบรู้ด้านสุขภาพ 6 ด้าน</p>
-        </div>
-        <div class="tabs" role="tablist" aria-label="หัวข้อเนื้อหา" id="tabs"></div>
-        <article class="card topic" id="topic" role="tabpanel" tabindex="-1"></article>
-        <div class="card media-card" id="externalMedia"></div>
-        <div class="content-foot">
-          <p class="read-count" id="readCount"></p>
-          <div class="read-alert" id="readAlert" role="alert" hidden></div>
-          <div class="foot-btns">
-            <button class="btn btn-ghost" type="button" id="btnToSkills" hidden>ความรอบรู้ 6 ด้าน →</button>
-            <button class="btn btn-primary" type="button" id="btnToPost">อ่านครบแล้ว ไปเนื้อหาความรอบรู้ 6 ด้าน</button>
+        <!-- เสริมสร้างความรอบรู้ด้านสุขภาพ 6 ด้าน + แบบฝึกทักษะ -->
+        <section class="view" id="view-skills" data-view="skills" hidden>
+          <div class="page page-mid">
+            <header class="page-header">
+              <div>
+                <p class="eyebrow">ขั้นที่ 6 · ครั้งที่ 1 · เสริมสร้างความรอบรู้ด้านสุขภาพ</p>
+                <h2 class="page-title">ความรอบรู้ด้านสุขภาพ 6 ด้าน</h2>
+                <p class="page-sub" id="skillsHint">ศึกษาเนื้อหาและทำตัวอย่างสถานการณ์ให้ครบทั้ง 6 ด้าน แล้วกดปุ่มด้านล่างเพื่อทำแบบประเมินความรอบรู้ด้านสุขภาพ (หลังเข้าร่วมโปรแกรม)</p>
+              </div>
+              <div class="meter"><p class="read-count" id="skillCount"></p></div>
+            </header>
+            <div class="sk-steps-bar" role="tablist" aria-label="ความรอบรู้ด้านสุขภาพ 6 ด้าน" id="skillTabs"></div>
+            <article class="card topic skill" id="skill" role="tabpanel" tabindex="-1"></article>
+            <div class="content-foot card">
+              <div class="read-alert" id="skillsAlert" role="alert" hidden></div>
+              <div class="foot-btns">
+                <button class="btn btn-ghost" type="button" data-nav="content">← กลับไปเนื้อหา 9 หัวข้อ</button>
+                <button class="btn btn-primary" type="button" id="btnSkillsDone">ทำครบแล้ว ไปแบบประเมินความรอบรู้</button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    </section>
+        </section>
 
-    <!-- เสริมสร้างความรอบรู้ด้านสุขภาพ 6 ด้าน + แบบฝึกทักษะ -->
-    <section class="view" id="view-skills" data-view="skills" hidden>
-      <div class="content-wrap">
-        <div class="content-head">
-          <p class="eyebrow">ขั้นที่ 6 · ครั้งที่ 1 · เสริมสร้างความรอบรู้ด้านสุขภาพ</p>
-          <h2>ความรอบรู้ด้านสุขภาพ 6 ด้าน</h2>
-          <p class="muted" id="skillsHint">ศึกษาเนื้อหาและทำตัวอย่างสถานการณ์ให้ครบทั้ง 6 ด้าน แล้วกดปุ่มด้านล่างเพื่อทำแบบประเมินความรอบรู้ด้านสุขภาพ (หลังเข้าร่วมโปรแกรม)</p>
-        </div>
-        <div class="sk-steps-bar" role="tablist" aria-label="ความรอบรู้ด้านสุขภาพ 6 ด้าน" id="skillTabs"></div>
-        <article class="card topic skill" id="skill" role="tabpanel" tabindex="-1"></article>
-        <div class="content-foot">
-          <p class="read-count" id="skillCount"></p>
-          <div class="read-alert" id="skillsAlert" role="alert" hidden></div>
-          <div class="foot-btns">
-            <button class="btn btn-ghost" type="button" data-nav="content">← กลับไปเนื้อหา 9 หัวข้อ</button>
-            <button class="btn btn-primary" type="button" id="btnSkillsDone">ทำครบแล้ว ไปแบบประเมินความรอบรู้</button>
+        <!-- บันทึกครั้งที่ 1 / รอ 1 สัปดาห์ -->
+        <section class="view" id="view-wait" data-view="wait" hidden>
+          <div class="page page-mid">
+            <div class="card wait" id="waitCard"></div>
           </div>
-        </div>
-      </div>
-    </section>
+        </section>
 
-    <!-- รอ 1 สัปดาห์ -->
-    <section class="view" id="view-wait" data-view="wait" hidden>
-      <div class="card narrow wait" id="waitCard"></div>
-    </section>
+        <!-- กลับมาทำต่อด้วยรหัสส่วนตัว -->
+        <section class="view" id="view-resume" data-view="resume" hidden>
+          <div class="split">
+            <div class="split-visual" aria-hidden="true">
+              <img src="assets/img/diagnosis-2.jpg" alt="">
+              <div class="split-copy">
+                <p class="split-title">ครบ 1 สัปดาห์แล้ว<br>มาดูกันว่าเปลี่ยนไปแค่ไหน</p>
+                <p>ทำแบบประเมินหลังเรียน แล้วดูผลเทียบกับครั้งแรก</p>
+              </div>
+            </div>
+            <div class="split-panel narrow-panel">
+              <form id="resumeForm" novalidate>
+                <p class="eyebrow">ขั้นที่ 1 · ครั้งที่ 2 · กลับมาทำแบบประเมินหลังเรียน</p>
+                <h2 class="page-title">ยินดีต้อนรับกลับมา</h2>
+                <p class="muted">ใส่รหัสส่วนตัวที่ตั้งไว้ตอนทำครั้งแรก</p>
+                <div class="field" data-field="rcode">
+                  <label class="lbl" for="f_rcode">รหัสส่วนตัว</label>
+                  <input class="text-in" type="text" id="f_rcode" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="20">
+                  <p class="field-error" id="resumeErr" role="alert" hidden></p>
+                </div>
+                <button class="btn btn-primary btn-lg btn-block" type="submit" id="btnResumeGo">ไปต่อ</button>
+                <div class="actions">
+                  <button class="btn btn-ghost" type="button" data-nav="home">ยกเลิก</button>
+                </div>
+                <p class="fine">ยังไม่เคยทำครั้งแรก? <button type="button" class="link" id="btnResumeStart">เริ่มต้นที่นี่</button></p>
+              </form>
+            </div>
+          </div>
+        </section>
 
-    <!-- กลับมาทำต่อด้วยรหัสส่วนตัว -->
-    <section class="view" id="view-resume" data-view="resume" hidden>
-      <form class="card narrow" id="resumeForm" novalidate>
-        <p class="eyebrow">ขั้นที่ 1 · ครั้งที่ 2 · กลับมาทำแบบประเมินหลังเรียน</p>
-        <h2>ใส่รหัสส่วนตัว</h2>
-        <p class="muted">ใช้รหัสที่ท่านตั้งไว้ตอนทำครั้งแรก</p>
-        <div class="field" data-field="rcode">
-          <label class="lbl" for="f_rcode">รหัสส่วนตัว</label>
-          <input class="text-in" type="text" id="f_rcode" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="20">
-          <p class="field-error" id="resumeErr" role="alert" hidden></p>
-        </div>
-        <div class="actions">
-          <button class="btn btn-ghost" type="button" data-nav="home">ยกเลิก</button>
-          <button class="btn btn-primary" type="submit" id="btnResumeGo">ไปต่อ</button>
-        </div>
-        <p class="fine">ยังไม่เคยทำครั้งแรก? <button type="button" class="link" id="btnResumeStart">เริ่มต้นที่นี่</button></p>
-      </form>
-    </section>
+        <!-- ครั้งที่ 1 ท้าย: แบบประเมินความรอบรู้หลังศึกษาเนื้อหา -->
+        <section class="view" id="view-hlpost" data-view="hlpost" hidden>
+          <form class="assess" id="hlpostForm" novalidate></form>
+        </section>
 
-    <!-- ครั้งที่ 2 ชุดที่ 1: แบบประเมินความรอบรู้หลังเข้าร่วมโปรแกรม -->
-    <section class="view" id="view-hlpost" data-view="hlpost" hidden>
-      <form class="card narrow" id="hlpostForm" novalidate></form>
-    </section>
+        <!-- ครั้งที่ 2: แบบประเมินพฤติกรรมหลังเข้าร่วมโปรแกรม -->
+        <section class="view" id="view-post" data-view="post" hidden>
+          <form class="assess" id="postForm" novalidate></form>
+        </section>
 
-    <!-- ครั้งที่ 2 ชุดที่ 2: แบบประเมินพฤติกรรมหลังเข้าร่วมโปรแกรม -->
-    <section class="view" id="view-post" data-view="post" hidden>
-      <form class="card narrow" id="postForm" novalidate></form>
-    </section>
+        <!-- สรุปผล -->
+        <section class="view" id="view-summary" data-view="summary" hidden>
+          <div class="page page-mid" id="summaryCard"></div>
+        </section>
 
-    <!-- สรุปผล -->
-    <section class="view" id="view-summary" data-view="summary" hidden>
-      <div class="card narrow" id="summaryCard"></div>
-    </section>
+        <!-- ขอบคุณ -->
+        <section class="view" id="view-thanks" data-view="thanks" hidden>
+          <div class="page page-mid thanks">
+            <div class="thanks-hero">
+              <img class="thanks-logo" src="assets/logo-nursing-ubu.svg" alt="ตราคณะพยาบาลศาสตร์ มหาวิทยาลัยอุบลราชธานี" width="88" height="88">
+              <h2 class="page-title">ขอบคุณที่เข้าร่วม</h2>
+              <p class="thanks-msg" id="thanksMsg"></p>
+            </div>
+            <form class="card card-pad sat" id="satForm" novalidate>
+              <p class="eyebrow">ขั้นที่ 4 · ครั้งที่ 2 · ความพึงพอใจ</p>
+              <h3 class="card-title">ประเมินความพึงพอใจต่อเว็บไซต์</h3>
+              <p class="muted">ไม่บังคับ ให้คะแนน 1–5 ดาว ข้ามข้อที่ไม่ต้องการตอบได้</p>
+              <div id="satItems"></div>
+              <label class="lbl" for="satComment">ข้อเสนอแนะเพิ่มเติม</label>
+              <textarea id="satComment" rows="4" maxlength="1000" placeholder="สิ่งที่ชอบ หรือสิ่งที่อยากให้ปรับปรุง"></textarea>
+              <p class="sat-count"><span id="satCommentCount">0</span>/1000</p>
+              <div class="sat-status" id="satStatus" role="status" aria-live="polite"></div>
+              <div class="actions"><button class="btn btn-primary" type="submit" id="btnSat">ส่งความคิดเห็น</button></div>
+            </form>
+            <div class="dev-credit">
+              <p class="muted">พัฒนาเว็บไซต์โดย</p>
+              <p><strong>นายธีรพล พูพวง</strong><br>รหัสนักศึกษา 67114540277<br>คณะวิทยาศาสตร์ มหาวิทยาลัยอุบลราชธานี</p>
+            </div>
+            <div class="actions center">
+              <button class="btn btn-primary btn-lg" type="button" id="btnToAck">ไปต่อ</button>
+            </div>
+          </div>
+        </section>
 
-    <!-- ขอบคุณ -->
-    <section class="view" id="view-thanks" data-view="thanks" hidden>
-      <div class="card narrow thanks">
-        <img class="thanks-logo" src="assets/logo-nursing-ubu.svg" alt="ตราคณะพยาบาลศาสตร์ มหาวิทยาลัยอุบลราชธานี" width="88" height="88">
-        <svg class="thanks-art" viewBox="0 0 300 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <ellipse cx="150" cy="200" rx="110" ry="12" fill="#ECE0DA"/>
-          <path d="M150 182 C98 148 70 120 70 88 C70 62 90 42 115 42 C130 42 143 50 150 63 C157 50 170 42 185 42 C210 42 230 62 230 88 C230 120 202 148 150 182 Z" fill="#F6B0BB"/>
-          <path d="M150 160 C112 134 92 114 92 90 C92 74 104 62 120 62 C132 62 142 69 150 80 C158 69 168 62 180 62 C196 62 208 74 208 90 C208 114 188 134 150 160 Z" fill="#F1C8CB"/>
-          <path d="M40 120 c-14 -10 -14 -30 0 -36 c8 14 8 26 0 36 z" fill="#9CAD8C"/>
-          <path d="M40 120 c14 -10 30 -6 34 8 c-14 4 -26 2 -34 -8 z" fill="#7E8C69"/>
-          <path d="M260 120 c14 -10 14 -30 0 -36 c-8 14 -8 26 0 36 z" fill="#9CAD8C"/>
-          <path d="M260 120 c-14 -10 -30 -6 -34 8 c14 4 26 2 34 -8 z" fill="#7E8C69"/>
-          <circle cx="62" cy="40" r="5" fill="#F6B0BB"/><circle cx="238" cy="34" r="7" fill="#9CAD8C"/><circle cx="270" cy="70" r="4" fill="#F6B0BB"/><circle cx="30" cy="70" r="4" fill="#9CAD8C"/>
-          <text x="150" y="122" text-anchor="middle" font-size="30" font-weight="700" fill="#3E4733" font-family="Anuphan, sans-serif">ขอบคุณ</text>
-        </svg>
-        <h2>ขอบคุณที่เข้าร่วม</h2>
-        <p class="thanks-msg" id="thanksMsg"></p>
-        <div class="dev-credit">
-          <p class="muted">พัฒนาเว็บไซต์โดย</p>
-          <p><strong>นายธีรพล พูพวง</strong><br>รหัสนักศึกษา 67114540277<br>คณะวิทยาศาสตร์ มหาวิทยาลัยอุบลราชธานี</p>
-        </div>
+        <!-- กิตติกรรมประกาศ (หน้าสุดท้าย) -->
+        <section class="view" id="view-ack" data-view="ack" hidden>
+          <article class="page page-read ack">
+            <header>
+              <p class="kicker">ข้อมูลโครงการ</p>
+              <h2 class="page-title">กิตติกรรมประกาศ</h2>
+            </header>
+            <div id="ackBody"></div>
+            <div class="ack-org">
+              <img class="ack-logo" src="assets/logo-nursing-ubu.svg" alt="ตราคณะพยาบาลศาสตร์ มหาวิทยาลัยอุบลราชธานี" width="56" height="56">
+              <div><strong>คณะพยาบาลศาสตร์ มหาวิทยาลัยอุบลราชธานี</strong><span>คณะผู้จัดทำ นักศึกษาพยาบาลศาสตร์ชั้นปีที่ 3</span></div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-secondary" type="button" data-nav="content">อ่านเนื้อหาอีกครั้ง</button>
+              <button class="btn btn-primary" type="button" id="btnRestart">เริ่มใหม่สำหรับผู้ตอบคนถัดไป</button>
+            </div>
+          </article>
+        </section>
 
-        <form class="sat" id="satForm" novalidate>
-          <p class="eyebrow">ขั้นที่ 4 · ครั้งที่ 2 · ความพึงพอใจ</p>
-          <h3>ประเมินความพึงพอใจต่อเว็บไซต์</h3>
-          <p class="muted">ไม่บังคับ ให้คะแนน 1–5 ดาว ข้ามข้อที่ไม่ต้องการตอบได้</p>
-          <div id="satItems"></div>
-          <label class="lbl" for="satComment">ข้อเสนอแนะเพิ่มเติม</label>
-          <textarea id="satComment" rows="4" maxlength="1000" placeholder="สิ่งที่ชอบ หรือสิ่งที่อยากให้ปรับปรุง"></textarea>
-          <p class="sat-count"><span id="satCommentCount">0</span>/1000</p>
-          <div class="sat-status" id="satStatus" role="status" aria-live="polite"></div>
-          <div class="actions center"><button class="btn btn-primary" type="submit" id="btnSat">ส่งความคิดเห็น</button></div>
-        </form>
+        <!-- แหล่งข้อมูล -->
+        <section class="view" id="view-sources" data-view="sources" hidden>
+          <div class="page page-mid">
+            <header class="page-header">
+              <div>
+                <p class="kicker">ข้อมูลโครงการ</p>
+                <h2 class="page-title">แหล่งอ้างอิง</h2>
+                <p class="page-sub">เนื้อหาในเว็บไซต์นี้เรียบเรียงใหม่จากแหล่งต่อไปนี้ อินโฟกราฟิกและภาพประกอบจัดทำขึ้นใหม่สำหรับเว็บไซต์นี้</p>
+              </div>
+              <span class="fine" id="refCount"></span>
+            </header>
+            <div class="chips" id="refFilter" role="group" aria-label="กรองประเภทแหล่งอ้างอิง"></div>
+            <ol class="refs" id="refList"></ol>
+            <div class="credits inline" data-credits></div>
+            <div class="actions">
+              <button class="btn btn-ghost" type="button" id="btnSourcesBack">ย้อนกลับ</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
 
-        <div class="actions center">
-          <button class="btn btn-primary" type="button" id="btnToAck">ไปต่อ</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- กิตติกรรมประกาศ (หน้าสุดท้าย) -->
-    <section class="view" id="view-ack" data-view="ack" hidden>
-      <div class="card narrow ack">
-        <img class="ack-logo" src="assets/logo-nursing-ubu.svg" alt="ตราคณะพยาบาลศาสตร์ มหาวิทยาลัยอุบลราชธานี" width="120" height="120">
-        <p class="ack-org">คณะพยาบาลศาสตร์<br>มหาวิทยาลัยอุบลราชธานี</p>
-        <hr class="ack-line">
-        <h2>กิตติกรรมประกาศ</h2>
-        <div id="ackBody"></div>
-        <div class="actions center">
-          <button class="btn btn-ghost" type="button" data-nav="content">อ่านเนื้อหาอีกครั้ง</button>
-          <button class="btn btn-primary" type="button" id="btnRestart">เริ่มใหม่สำหรับผู้ตอบคนถัดไป</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- แหล่งข้อมูล -->
-    <section class="view" id="view-sources" data-view="sources" hidden>
-      <div class="card narrow">
-        <p class="eyebrow">แหล่งข้อมูล</p>
-        <h2>แหล่งอ้างอิง</h2>
-        <p class="muted">เนื้อหาในเว็บไซต์นี้เรียบเรียงใหม่จากแหล่งต่อไปนี้ อินโฟกราฟิกและภาพประกอบจัดทำขึ้นใหม่สำหรับเว็บไซต์นี้</p>
-        <ol class="refs" id="refList"></ol>
-        <div class="credits inline" data-credits></div>
-        <div class="actions">
-          <button class="btn btn-ghost" type="button" id="btnSourcesBack">ย้อนกลับ</button>
-        </div>
-      </div>
-    </section>
-  </main>
+  <!-- แถบปุ่มล่างสำหรับมือถือ -->
+  <nav class="tabbar" aria-label="เมนูลัด">
+    <button type="button" class="tab-item" data-nav="home" data-tab="home"><svg class="icon"><use href="#i-home"/></svg>หน้าแรก</button>
+    <button type="button" class="tab-item" data-nav="assessnext" data-tab="assess"><svg class="icon"><use href="#i-assess"/></svg>ประเมิน</button>
+    <button type="button" class="tab-item" data-nav="content" data-tab="content"><svg class="icon"><use href="#i-book"/></svg>เนื้อหา</button>
+    <button type="button" class="tab-item" data-nav="summary" data-tab="summary"><svg class="icon"><use href="#i-chart"/></svg>ผลของฉัน</button>
+    <button type="button" class="tab-item" data-menu data-tab="menu" aria-controls="sidebar"><svg class="icon"><use href="#i-menu"/></svg>เมนู</button>
+  </nav>
 
   <dialog class="lightbox" id="lightbox" aria-label="ดูภาพขยาย">
     <button class="lightbox-close" type="button" id="lightboxClose" aria-label="ปิด">✕</button>
@@ -332,9 +479,10 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="config.js?v=20261025-7"></script>
-  <script src="data.js?v=20261025-7"></script>
-  <script src="skills.js?v=20261025-7"></script>
-  <script src="app.js?v=20261025-7"></script>
+  <script src="config.js?v=20261125-1"></script>
+  <script src="data.js?v=20261125-1"></script>
+  <script src="skills.js?v=20261125-1"></script>
+  <script src="germ3d.js?v=20261125-1"></script>
+  <script src="app.js?v=20261125-1"></script>
 </body>
 </html>

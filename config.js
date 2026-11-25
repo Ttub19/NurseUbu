@@ -6,15 +6,20 @@ window.APP_CONFIG = {
   //    ถ้ายังว่างไว้ เว็บจะทำงานได้ปกติ แต่จะไม่บันทึกข้อมูลลง Google Sheets
   SCRIPT_URL: "https://script.google.com/macros/s/AKfycbzg-Yu246vs-PQzrXlUZ5BPKaxVTauOpyzYui6YQKOeY0gsKt_ZXr0DREzJkD1EDYbwpw/exec",
 
-  // รูปพื้นหลังเต็มจอของหน้าแรก (วางรูปในโฟลเดอร์ assets/img แล้วแก้ชื่อไฟล์ตรงนี้)
-  // แนะนำรูปแนวนอน กว้างอย่างน้อย 1600px เช่น "assets/img/background.jpg"
+  // รูปประกอบหน้าแรก (กรอบด้านขวา) วางรูปในโฟลเดอร์ assets/img แล้วแก้ชื่อไฟล์ตรงนี้
+  // แนะนำรูปแนวนอน กว้างอย่างน้อย 1200px เช่น "assets/img/background.jpg"
   HERO_IMAGE: "assets/img/home.jpg",
+
+  // แบบจำลอง 3 มิติของเชื้อซิฟิลิส (ไฟล์ germ3d.js) · false = ไม่แสดง
+  GERM3D: true,
+  // แสดงในหัวข้อไหน (ใช้ id ของหัวข้อใน data.js เช่น "cause" = สาเหตุของการเกิดโรค)
+  GERM3D_TOPIC: "cause",
 
   // ล็อกแบบประเมินหลังเรียนไว้จนครบ WAIT_DAYS วันหรือไม่
   //   false = ปิดล็อก ทำแบบประเมินหลังเรียนได้ทันทีหลังบันทึกครั้งที่ 1 (ยังส่งอีเมลเตือนเมื่อครบ WAIT_DAYS วัน)
   //   true  = เปิดล็อก ต้องรอครบ WAIT_DAYS วัน
   // ต้องตั้งให้ตรงกับ LOCK_ENABLED ใน Code.gs (ตัวที่ล็อกจริงคือฝั่ง Google Apps Script)
-  LOCK_POST: false,
+  LOCK_POST: true,
 
   // ระยะเวลาที่ต้องรอ / วันส่งอีเมลเตือน (วัน) ต้องตั้งให้ตรงกับ WAIT_DAYS ใน Code.gs
   WAIT_DAYS: 7,
